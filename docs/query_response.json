@@ -1,0 +1,1882 @@
+{
+    "data": {
+        "opponentMistakesTimeSeries": {
+            "nodes": [
+                {
+                    "start_time": "2024-12-10T00:00:00Z",
+                    "end_time": "2024-12-17T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 6
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 5
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 4
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2024-12-17T00:00:00Z",
+                    "end_time": "2024-12-24T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 11
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 7
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 3
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 1
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2024-12-24T00:00:00Z",
+                    "end_time": "2024-12-31T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 18
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 12
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 10
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 10
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2024-12-31T00:00:00Z",
+                    "end_time": "2025-01-07T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 12
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 10
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 7
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 7
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-01-07T00:00:00Z",
+                    "end_time": "2025-01-14T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 7
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 7
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 5
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 3
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-01-14T00:00:00Z",
+                    "end_time": "2025-01-21T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 9
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 7
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 5
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 4
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-01-21T00:00:00Z",
+                    "end_time": "2025-01-28T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 17
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 9
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 7
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 5
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-01-28T00:00:00Z",
+                    "end_time": "2025-02-04T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 10
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 6
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 4
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 3
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-02-04T00:00:00Z",
+                    "end_time": "2025-02-11T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 9
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 4
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 4
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 2
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-02-11T00:00:00Z",
+                    "end_time": "2025-02-18T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 14
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 5
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 3
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 3
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-02-18T00:00:00Z",
+                    "end_time": "2025-02-25T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 2
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 2
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 1
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 1
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-02-25T00:00:00Z",
+                    "end_time": "2025-03-04T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 12
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 11
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 9
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 4
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-03-04T00:00:00Z",
+                    "end_time": "2025-03-11T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 10
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 7
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 6
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 6
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-03-11T00:00:00Z",
+                    "end_time": "2025-03-18T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 8
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 3
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 1
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 1
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-03-18T00:00:00Z",
+                    "end_time": "2025-03-25T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 5
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 3
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 3
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 2
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-03-25T00:00:00Z",
+                    "end_time": "2025-04-01T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 3
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 3
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 2
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 1
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-04-01T00:00:00Z",
+                    "end_time": "2025-04-08T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 6
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 4
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 4
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 3
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-04-08T00:00:00Z",
+                    "end_time": "2025-04-15T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 7
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 5
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 5
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-04-15T00:00:00Z",
+                    "end_time": "2025-04-22T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 13
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 13
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 12
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 9
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-04-22T00:00:00Z",
+                    "end_time": "2025-04-29T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 8
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 6
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 5
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 4
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-04-29T00:00:00Z",
+                    "end_time": "2025-05-06T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 11
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 9
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 6
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 5
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-05-06T00:00:00Z",
+                    "end_time": "2025-05-13T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 3
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 2
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-05-13T00:00:00Z",
+                    "end_time": "2025-05-20T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 10
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 5
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 2
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 1
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-05-20T00:00:00Z",
+                    "end_time": "2025-05-27T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 5
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 3
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 1
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 1
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-05-27T00:00:00Z",
+                    "end_time": "2025-06-03T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 4
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 3
+                            },
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 3
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 1
+                            }
+                        ]
+                    }
+                },
+                {
+                    "start_time": "2025-06-03T00:00:00Z",
+                    "end_time": "2025-06-10T00:00:00Z",
+                    "stats": {
+                        "theme_counts": [
+                            {
+                                "theme": "opponent_blunder_caught",
+                                "count": 7
+                            },
+                            {
+                                "theme": "opponent_mistake_caught",
+                                "count": 3
+                            },
+                            {
+                                "theme": "opponent_mistake_missed",
+                                "count": 1
+                            },
+                            {
+                                "theme": "opponent_blunder_missed",
+                                "count": 1
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "myMistakesTimeSeries": {
+            "nodes": [
+                {
+                    "start_time": "2024-12-11T00:00:00Z",
+                    "end_time": "2024-12-18T00:00:00Z",
+                    "stats": {
+                        "total_count": 23,
+                        "unique_game_count": 13,
+                        "average_move_length": 2.4347826086956523
+                    }
+                },
+                {
+                    "start_time": "2024-12-18T00:00:00Z",
+                    "end_time": "2024-12-25T00:00:00Z",
+                    "stats": {
+                        "total_count": 27,
+                        "unique_game_count": 19,
+                        "average_move_length": 2.3703703703703702
+                    }
+                },
+                {
+                    "start_time": "2024-12-25T00:00:00Z",
+                    "end_time": "2025-01-01T00:00:00Z",
+                    "stats": {
+                        "total_count": 41,
+                        "unique_game_count": 23,
+                        "average_move_length": 2.5853658536585367
+                    }
+                },
+                {
+                    "start_time": "2025-01-01T00:00:00Z",
+                    "end_time": "2025-01-08T00:00:00Z",
+                    "stats": {
+                        "total_count": 40,
+                        "unique_game_count": 20,
+                        "average_move_length": 2.55
+                    }
+                },
+                {
+                    "start_time": "2025-01-08T00:00:00Z",
+                    "end_time": "2025-01-15T00:00:00Z",
+                    "stats": {
+                        "total_count": 24,
+                        "unique_game_count": 13,
+                        "average_move_length": 2.3333333333333335
+                    }
+                },
+                {
+                    "start_time": "2025-01-15T00:00:00Z",
+                    "end_time": "2025-01-22T00:00:00Z",
+                    "stats": {
+                        "total_count": 20,
+                        "unique_game_count": 11,
+                        "average_move_length": 2.8
+                    }
+                },
+                {
+                    "start_time": "2025-01-22T00:00:00Z",
+                    "end_time": "2025-01-29T00:00:00Z",
+                    "stats": {
+                        "total_count": 41,
+                        "unique_game_count": 26,
+                        "average_move_length": 2.341463414634146
+                    }
+                },
+                {
+                    "start_time": "2025-01-29T00:00:00Z",
+                    "end_time": "2025-02-05T00:00:00Z",
+                    "stats": {
+                        "total_count": 30,
+                        "unique_game_count": 16,
+                        "average_move_length": 2.6666666666666665
+                    }
+                },
+                {
+                    "start_time": "2025-02-05T00:00:00Z",
+                    "end_time": "2025-02-12T00:00:00Z",
+                    "stats": {
+                        "total_count": 20,
+                        "unique_game_count": 15,
+                        "average_move_length": 2.7
+                    }
+                },
+                {
+                    "start_time": "2025-02-12T00:00:00Z",
+                    "end_time": "2025-02-19T00:00:00Z",
+                    "stats": {
+                        "total_count": 13,
+                        "unique_game_count": 11,
+                        "average_move_length": 2.6153846153846154
+                    }
+                },
+                {
+                    "start_time": "2025-02-19T00:00:00Z",
+                    "end_time": "2025-02-26T00:00:00Z",
+                    "stats": {
+                        "total_count": 10,
+                        "unique_game_count": 6,
+                        "average_move_length": 2.8
+                    }
+                },
+                {
+                    "start_time": "2025-02-26T00:00:00Z",
+                    "end_time": "2025-03-05T00:00:00Z",
+                    "stats": {
+                        "total_count": 35,
+                        "unique_game_count": 19,
+                        "average_move_length": 2.4571428571428573
+                    }
+                },
+                {
+                    "start_time": "2025-03-05T00:00:00Z",
+                    "end_time": "2025-03-12T00:00:00Z",
+                    "stats": {
+                        "total_count": 40,
+                        "unique_game_count": 18,
+                        "average_move_length": 2.95
+                    }
+                },
+                {
+                    "start_time": "2025-03-12T00:00:00Z",
+                    "end_time": "2025-03-19T00:00:00Z",
+                    "stats": {
+                        "total_count": 13,
+                        "unique_game_count": 11,
+                        "average_move_length": 2.6153846153846154
+                    }
+                },
+                {
+                    "start_time": "2025-03-19T00:00:00Z",
+                    "end_time": "2025-03-26T00:00:00Z",
+                    "stats": {
+                        "total_count": 4,
+                        "unique_game_count": 4,
+                        "average_move_length": 2.5
+                    }
+                },
+                {
+                    "start_time": "2025-03-26T00:00:00Z",
+                    "end_time": "2025-04-02T00:00:00Z",
+                    "stats": {
+                        "total_count": 12,
+                        "unique_game_count": 5,
+                        "average_move_length": 2.3333333333333335
+                    }
+                },
+                {
+                    "start_time": "2025-04-02T00:00:00Z",
+                    "end_time": "2025-04-09T00:00:00Z",
+                    "stats": {
+                        "total_count": 16,
+                        "unique_game_count": 8,
+                        "average_move_length": 2.5
+                    }
+                },
+                {
+                    "start_time": "2025-04-09T00:00:00Z",
+                    "end_time": "2025-04-16T00:00:00Z",
+                    "stats": {
+                        "total_count": 11,
+                        "unique_game_count": 9,
+                        "average_move_length": 2.5454545454545454
+                    }
+                },
+                {
+                    "start_time": "2025-04-16T00:00:00Z",
+                    "end_time": "2025-04-23T00:00:00Z",
+                    "stats": {
+                        "total_count": 58,
+                        "unique_game_count": 34,
+                        "average_move_length": 3.0689655172413794
+                    }
+                },
+                {
+                    "start_time": "2025-04-23T00:00:00Z",
+                    "end_time": "2025-04-30T00:00:00Z",
+                    "stats": {
+                        "total_count": 18,
+                        "unique_game_count": 9,
+                        "average_move_length": 2.888888888888889
+                    }
+                },
+                {
+                    "start_time": "2025-04-30T00:00:00Z",
+                    "end_time": "2025-05-07T00:00:00Z",
+                    "stats": {
+                        "total_count": 27,
+                        "unique_game_count": 21,
+                        "average_move_length": 2.6666666666666665
+                    }
+                },
+                {
+                    "start_time": "2025-05-07T00:00:00Z",
+                    "end_time": "2025-05-14T00:00:00Z",
+                    "stats": {
+                        "total_count": 11,
+                        "unique_game_count": 7,
+                        "average_move_length": 3.090909090909091
+                    }
+                },
+                {
+                    "start_time": "2025-05-14T00:00:00Z",
+                    "end_time": "2025-05-21T00:00:00Z",
+                    "stats": {
+                        "total_count": 8,
+                        "unique_game_count": 7,
+                        "average_move_length": 2.5
+                    }
+                },
+                {
+                    "start_time": "2025-05-21T00:00:00Z",
+                    "end_time": "2025-05-28T00:00:00Z",
+                    "stats": {
+                        "total_count": 3,
+                        "unique_game_count": 2,
+                        "average_move_length": 3.3333333333333335
+                    }
+                },
+                {
+                    "start_time": "2025-05-28T00:00:00Z",
+                    "end_time": "2025-06-04T00:00:00Z",
+                    "stats": {
+                        "total_count": 6,
+                        "unique_game_count": 4,
+                        "average_move_length": 3
+                    }
+                },
+                {
+                    "start_time": "2025-06-04T00:00:00Z",
+                    "end_time": "2025-06-11T00:00:00Z",
+                    "stats": {
+                        "total_count": 19,
+                        "unique_game_count": 13,
+                        "average_move_length": 2.526315789473684
+                    }
+                }
+            ]
+        },
+        "opponentMistakesMissed3M": {
+            "tag_counts": [
+                {
+                    "tag": "oneMove",
+                    "count": 85
+                },
+                {
+                    "tag": "advantage",
+                    "count": 60
+                },
+                {
+                    "tag": "equality",
+                    "count": 28
+                },
+                {
+                    "tag": "crushing",
+                    "count": 21
+                },
+                {
+                    "tag": "short",
+                    "count": 18
+                },
+                {
+                    "tag": "defensiveMove",
+                    "count": 13
+                },
+                {
+                    "tag": "long",
+                    "count": 9
+                },
+                {
+                    "tag": "hangingPiece",
+                    "count": 9
+                },
+                {
+                    "tag": "kingsideAttack",
+                    "count": 8
+                },
+                {
+                    "tag": "mate",
+                    "count": 7
+                },
+                {
+                    "tag": "quietMove",
+                    "count": 7
+                },
+                {
+                    "tag": "rookEndgame",
+                    "count": 7
+                },
+                {
+                    "tag": "discoveredAttack",
+                    "count": 5
+                },
+                {
+                    "tag": "mateIn2",
+                    "count": 4
+                },
+                {
+                    "tag": "veryLong",
+                    "count": 4
+                },
+                {
+                    "tag": "skewer",
+                    "count": 4
+                },
+                {
+                    "tag": "fork",
+                    "count": 3
+                },
+                {
+                    "tag": "queensideAttack",
+                    "count": 2
+                },
+                {
+                    "tag": "advancedPawn",
+                    "count": 2
+                },
+                {
+                    "tag": "mateIn1",
+                    "count": 2
+                },
+                {
+                    "tag": "pin",
+                    "count": 2
+                },
+                {
+                    "tag": "sacrifice",
+                    "count": 2
+                },
+                {
+                    "tag": "attraction",
+                    "count": 1
+                },
+                {
+                    "tag": "mateIn3",
+                    "count": 1
+                },
+                {
+                    "tag": "castling",
+                    "count": 1
+                },
+                {
+                    "tag": "pawnEndgame",
+                    "count": 1
+                },
+                {
+                    "tag": "clearance",
+                    "count": 1
+                },
+                {
+                    "tag": "trappedPiece",
+                    "count": 1
+                },
+                {
+                    "tag": "queenRookEndgame",
+                    "count": 1
+                },
+                {
+                    "tag": "bishopEndgame",
+                    "count": 1
+                },
+                {
+                    "tag": "doubleCheck",
+                    "count": 1
+                }
+            ],
+            "game_move_buckets": [
+                {
+                    "name": "Early opening",
+                    "min_move": 1,
+                    "max_move": 5,
+                    "count": 1
+                },
+                {
+                    "name": "Late opening",
+                    "min_move": 6,
+                    "max_move": 12,
+                    "count": 21
+                },
+                {
+                    "name": "Early middlegame",
+                    "min_move": 13,
+                    "max_move": 20,
+                    "count": 37
+                },
+                {
+                    "name": "Late middlegame",
+                    "min_move": 21,
+                    "max_move": 30,
+                    "count": 32
+                },
+                {
+                    "name": "Endgame",
+                    "min_move": 31,
+                    "max_move": 999,
+                    "count": 25
+                }
+            ],
+            "user_color_counts": [
+                {
+                    "color": "white",
+                    "count": 68
+                },
+                {
+                    "color": "black",
+                    "count": 48
+                }
+            ],
+            "move_length_counts": [
+                {
+                    "length": 2,
+                    "count": 85
+                },
+                {
+                    "length": 4,
+                    "count": 18
+                },
+                {
+                    "length": 6,
+                    "count": 9
+                },
+                {
+                    "length": 8,
+                    "count": 1
+                },
+                {
+                    "length": 10,
+                    "count": 1
+                },
+                {
+                    "length": 14,
+                    "count": 1
+                },
+                {
+                    "length": 18,
+                    "count": 1
+                }
+            ]
+        },
+        "opponentMistakesCaught3M": {
+            "tag_counts": [
+                {
+                    "tag": "oneMove",
+                    "count": 89
+                },
+                {
+                    "tag": "advantage",
+                    "count": 54
+                },
+                {
+                    "tag": "equality",
+                    "count": 41
+                },
+                {
+                    "tag": "hangingPiece",
+                    "count": 19
+                },
+                {
+                    "tag": "short",
+                    "count": 12
+                },
+                {
+                    "tag": "crushing",
+                    "count": 9
+                },
+                {
+                    "tag": "defensiveMove",
+                    "count": 9
+                },
+                {
+                    "tag": "quietMove",
+                    "count": 7
+                },
+                {
+                    "tag": "pin",
+                    "count": 5
+                },
+                {
+                    "tag": "fork",
+                    "count": 4
+                },
+                {
+                    "tag": "kingsideAttack",
+                    "count": 4
+                },
+                {
+                    "tag": "long",
+                    "count": 2
+                },
+                {
+                    "tag": "queensideAttack",
+                    "count": 1
+                },
+                {
+                    "tag": "intermezzo",
+                    "count": 1
+                },
+                {
+                    "tag": "rookEndgame",
+                    "count": 1
+                },
+                {
+                    "tag": "attackingF2F7",
+                    "count": 1
+                },
+                {
+                    "tag": "deflection",
+                    "count": 1
+                },
+                {
+                    "tag": "advancedPawn",
+                    "count": 1
+                },
+                {
+                    "tag": "promotion",
+                    "count": 1
+                },
+                {
+                    "tag": "trappedPiece",
+                    "count": 1
+                },
+                {
+                    "tag": "veryLong",
+                    "count": 1
+                }
+            ],
+            "game_move_buckets": [
+                {
+                    "name": "Early opening",
+                    "min_move": 1,
+                    "max_move": 5,
+                    "count": 4
+                },
+                {
+                    "name": "Late opening",
+                    "min_move": 6,
+                    "max_move": 12,
+                    "count": 17
+                },
+                {
+                    "name": "Early middlegame",
+                    "min_move": 13,
+                    "max_move": 20,
+                    "count": 50
+                },
+                {
+                    "name": "Late middlegame",
+                    "min_move": 21,
+                    "max_move": 30,
+                    "count": 28
+                },
+                {
+                    "name": "Endgame",
+                    "min_move": 31,
+                    "max_move": 999,
+                    "count": 5
+                }
+            ],
+            "user_color_counts": [
+                {
+                    "color": "white",
+                    "count": 58
+                },
+                {
+                    "color": "black",
+                    "count": 46
+                }
+            ],
+            "move_length_counts": [
+                {
+                    "length": 2,
+                    "count": 89
+                },
+                {
+                    "length": 4,
+                    "count": 12
+                },
+                {
+                    "length": 6,
+                    "count": 2
+                },
+                {
+                    "length": 8,
+                    "count": 1
+                }
+            ]
+        },
+        "opponentMistakesMissed3To6M": {
+            "tag_counts": [
+                {
+                    "tag": "oneMove",
+                    "count": 129
+                },
+                {
+                    "tag": "advantage",
+                    "count": 95
+                },
+                {
+                    "tag": "crushing",
+                    "count": 41
+                },
+                {
+                    "tag": "short",
+                    "count": 38
+                },
+                {
+                    "tag": "equality",
+                    "count": 27
+                },
+                {
+                    "tag": "defensiveMove",
+                    "count": 20
+                },
+                {
+                    "tag": "pin",
+                    "count": 19
+                },
+                {
+                    "tag": "mate",
+                    "count": 16
+                },
+                {
+                    "tag": "fork",
+                    "count": 14
+                },
+                {
+                    "tag": "quietMove",
+                    "count": 13
+                },
+                {
+                    "tag": "mateIn1",
+                    "count": 13
+                },
+                {
+                    "tag": "hangingPiece",
+                    "count": 12
+                },
+                {
+                    "tag": "rookEndgame",
+                    "count": 8
+                },
+                {
+                    "tag": "veryLong",
+                    "count": 7
+                },
+                {
+                    "tag": "advancedPawn",
+                    "count": 6
+                },
+                {
+                    "tag": "kingsideAttack",
+                    "count": 6
+                },
+                {
+                    "tag": "bishopEndgame",
+                    "count": 5
+                },
+                {
+                    "tag": "long",
+                    "count": 5
+                },
+                {
+                    "tag": "deflection",
+                    "count": 4
+                },
+                {
+                    "tag": "queensideAttack",
+                    "count": 3
+                },
+                {
+                    "tag": "sacrifice",
+                    "count": 3
+                },
+                {
+                    "tag": "discoveredAttack",
+                    "count": 2
+                },
+                {
+                    "tag": "enPassant",
+                    "count": 2
+                },
+                {
+                    "tag": "promotion",
+                    "count": 2
+                },
+                {
+                    "tag": "mateIn2",
+                    "count": 2
+                },
+                {
+                    "tag": "skewer",
+                    "count": 1
+                },
+                {
+                    "tag": "attackingF2F7",
+                    "count": 1
+                },
+                {
+                    "tag": "pawnEndgame",
+                    "count": 1
+                },
+                {
+                    "tag": "doubleCheck",
+                    "count": 1
+                },
+                {
+                    "tag": "mateIn4",
+                    "count": 1
+                },
+                {
+                    "tag": "attraction",
+                    "count": 1
+                },
+                {
+                    "tag": "backRankMate",
+                    "count": 1
+                }
+            ],
+            "game_move_buckets": [
+                {
+                    "name": "Early opening",
+                    "min_move": 1,
+                    "max_move": 5,
+                    "count": 4
+                },
+                {
+                    "name": "Late opening",
+                    "min_move": 6,
+                    "max_move": 12,
+                    "count": 35
+                },
+                {
+                    "name": "Early middlegame",
+                    "min_move": 13,
+                    "max_move": 20,
+                    "count": 52
+                },
+                {
+                    "name": "Late middlegame",
+                    "min_move": 21,
+                    "max_move": 30,
+                    "count": 44
+                },
+                {
+                    "name": "Endgame",
+                    "min_move": 31,
+                    "max_move": 999,
+                    "count": 44
+                }
+            ],
+            "user_color_counts": [
+                {
+                    "color": "black",
+                    "count": 86
+                },
+                {
+                    "color": "white",
+                    "count": 93
+                }
+            ],
+            "move_length_counts": [
+                {
+                    "length": 2,
+                    "count": 129
+                },
+                {
+                    "length": 4,
+                    "count": 38
+                },
+                {
+                    "length": 6,
+                    "count": 5
+                },
+                {
+                    "length": 8,
+                    "count": 3
+                },
+                {
+                    "length": 10,
+                    "count": 1
+                },
+                {
+                    "length": 14,
+                    "count": 2
+                },
+                {
+                    "length": 20,
+                    "count": 1
+                }
+            ]
+        },
+        "opponentMistakesCaught3To6M": {
+            "tag_counts": [
+                {
+                    "tag": "oneMove",
+                    "count": 147
+                },
+                {
+                    "tag": "advantage",
+                    "count": 106
+                },
+                {
+                    "tag": "equality",
+                    "count": 55
+                },
+                {
+                    "tag": "hangingPiece",
+                    "count": 32
+                },
+                {
+                    "tag": "short",
+                    "count": 16
+                },
+                {
+                    "tag": "crushing",
+                    "count": 11
+                },
+                {
+                    "tag": "defensiveMove",
+                    "count": 11
+                },
+                {
+                    "tag": "quietMove",
+                    "count": 9
+                },
+                {
+                    "tag": "long",
+                    "count": 8
+                },
+                {
+                    "tag": "fork",
+                    "count": 7
+                },
+                {
+                    "tag": "pin",
+                    "count": 4
+                },
+                {
+                    "tag": "exposedKing",
+                    "count": 3
+                },
+                {
+                    "tag": "rookEndgame",
+                    "count": 3
+                },
+                {
+                    "tag": "kingsideAttack",
+                    "count": 2
+                },
+                {
+                    "tag": "pawnEndgame",
+                    "count": 2
+                },
+                {
+                    "tag": "queensideAttack",
+                    "count": 2
+                },
+                {
+                    "tag": "veryLong",
+                    "count": 2
+                },
+                {
+                    "tag": "knightEndgame",
+                    "count": 2
+                },
+                {
+                    "tag": "sacrifice",
+                    "count": 1
+                },
+                {
+                    "tag": "deflection",
+                    "count": 1
+                },
+                {
+                    "tag": "mateIn1",
+                    "count": 1
+                },
+                {
+                    "tag": "attraction",
+                    "count": 1
+                },
+                {
+                    "tag": "promotion",
+                    "count": 1
+                },
+                {
+                    "tag": "trappedPiece",
+                    "count": 1
+                },
+                {
+                    "tag": "advancedPawn",
+                    "count": 1
+                },
+                {
+                    "tag": "mate",
+                    "count": 1
+                },
+                {
+                    "tag": "castling",
+                    "count": 1
+                }
+            ],
+            "game_move_buckets": [
+                {
+                    "name": "Early opening",
+                    "min_move": 1,
+                    "max_move": 5,
+                    "count": 4
+                },
+                {
+                    "name": "Late opening",
+                    "min_move": 6,
+                    "max_move": 12,
+                    "count": 49
+                },
+                {
+                    "name": "Early middlegame",
+                    "min_move": 13,
+                    "max_move": 20,
+                    "count": 56
+                },
+                {
+                    "name": "Late middlegame",
+                    "min_move": 21,
+                    "max_move": 30,
+                    "count": 49
+                },
+                {
+                    "name": "Endgame",
+                    "min_move": 31,
+                    "max_move": 999,
+                    "count": 15
+                }
+            ],
+            "user_color_counts": [
+                {
+                    "color": "black",
+                    "count": 77
+                },
+                {
+                    "color": "white",
+                    "count": 96
+                }
+            ],
+            "move_length_counts": [
+                {
+                    "length": 2,
+                    "count": 147
+                },
+                {
+                    "length": 4,
+                    "count": 16
+                },
+                {
+                    "length": 6,
+                    "count": 8
+                },
+                {
+                    "length": 8,
+                    "count": 1
+                },
+                {
+                    "length": 12,
+                    "count": 1
+                }
+            ]
+        },
+        "myMistakes3M": {
+            "tag_counts": [
+                {
+                    "tag": "oneMove",
+                    "count": 152
+                },
+                {
+                    "tag": "advantage",
+                    "count": 96
+                },
+                {
+                    "tag": "equality",
+                    "count": 84
+                },
+                {
+                    "tag": "short",
+                    "count": 36
+                },
+                {
+                    "tag": "hangingPiece",
+                    "count": 33
+                },
+                {
+                    "tag": "defensiveMove",
+                    "count": 19
+                },
+                {
+                    "tag": "crushing",
+                    "count": 13
+                },
+                {
+                    "tag": "quietMove",
+                    "count": 13
+                },
+                {
+                    "tag": "fork",
+                    "count": 13
+                },
+                {
+                    "tag": "pin",
+                    "count": 10
+                },
+                {
+                    "tag": "mate",
+                    "count": 10
+                },
+                {
+                    "tag": "long",
+                    "count": 8
+                },
+                {
+                    "tag": "veryLong",
+                    "count": 7
+                },
+                {
+                    "tag": "rookEndgame",
+                    "count": 7
+                },
+                {
+                    "tag": "advancedPawn",
+                    "count": 6
+                },
+                {
+                    "tag": "mateIn1",
+                    "count": 4
+                },
+                {
+                    "tag": "mateIn3",
+                    "count": 3
+                },
+                {
+                    "tag": "kingsideAttack",
+                    "count": 3
+                },
+                {
+                    "tag": "deflection",
+                    "count": 3
+                },
+                {
+                    "tag": "discoveredAttack",
+                    "count": 3
+                },
+                {
+                    "tag": "queenEndgame",
+                    "count": 2
+                },
+                {
+                    "tag": "skewer",
+                    "count": 2
+                },
+                {
+                    "tag": "mateIn2",
+                    "count": 2
+                },
+                {
+                    "tag": "intermezzo",
+                    "count": 2
+                },
+                {
+                    "tag": "promotion",
+                    "count": 2
+                },
+                {
+                    "tag": "sacrifice",
+                    "count": 1
+                },
+                {
+                    "tag": "interference",
+                    "count": 1
+                },
+                {
+                    "tag": "bishopEndgame",
+                    "count": 1
+                },
+                {
+                    "tag": "queensideAttack",
+                    "count": 1
+                },
+                {
+                    "tag": "backRankMate",
+                    "count": 1
+                },
+                {
+                    "tag": "capturingDefender",
+                    "count": 1
+                },
+                {
+                    "tag": "attackingF2F7",
+                    "count": 1
+                },
+                {
+                    "tag": "queenRookEndgame",
+                    "count": 1
+                },
+                {
+                    "tag": "mateIn5",
+                    "count": 1
+                }
+            ],
+            "game_move_buckets": [
+                {
+                    "name": "Early opening",
+                    "min_move": 1,
+                    "max_move": 5,
+                    "count": 3
+                },
+                {
+                    "name": "Late opening",
+                    "min_move": 6,
+                    "max_move": 12,
+                    "count": 43
+                },
+                {
+                    "name": "Early middlegame",
+                    "min_move": 13,
+                    "max_move": 20,
+                    "count": 71
+                },
+                {
+                    "name": "Late middlegame",
+                    "min_move": 21,
+                    "max_move": 30,
+                    "count": 57
+                },
+                {
+                    "name": "Endgame",
+                    "min_move": 31,
+                    "max_move": 999,
+                    "count": 29
+                }
+            ],
+            "user_color_counts": [
+                {
+                    "color": "black",
+                    "count": 111
+                },
+                {
+                    "color": "white",
+                    "count": 92
+                }
+            ],
+            "move_length_counts": [
+                {
+                    "length": 2,
+                    "count": 152
+                },
+                {
+                    "length": 4,
+                    "count": 36
+                },
+                {
+                    "length": 6,
+                    "count": 8
+                },
+                {
+                    "length": 8,
+                    "count": 4
+                },
+                {
+                    "length": 10,
+                    "count": 2
+                },
+                {
+                    "length": 14,
+                    "count": 1
+                }
+            ]
+        },
+        "opponentMistakesMissedAllTime": {
+            "move_length_counts": [
+                {
+                    "length": 2,
+                    "count": 356
+                },
+                {
+                    "length": 4,
+                    "count": 94
+                },
+                {
+                    "length": 6,
+                    "count": 26
+                },
+                {
+                    "length": 8,
+                    "count": 5
+                },
+                {
+                    "length": 10,
+                    "count": 3
+                },
+                {
+                    "length": 14,
+                    "count": 3
+                },
+                {
+                    "length": 18,
+                    "count": 1
+                },
+                {
+                    "length": 20,
+                    "count": 1
+                }
+            ]
+        },
+        "opponentMistakesCaughtAllTime": {
+            "move_length_counts": [
+                {
+                    "length": 2,
+                    "count": 423
+                },
+                {
+                    "length": 4,
+                    "count": 58
+                },
+                {
+                    "length": 6,
+                    "count": 15
+                },
+                {
+                    "length": 8,
+                    "count": 3
+                },
+                {
+                    "length": 12,
+                    "count": 1
+                }
+            ]
+        },
+        "myMistakesAllTime": {
+            "move_length_counts": [
+                {
+                    "length": 2,
+                    "count": 742
+                },
+                {
+                    "length": 4,
+                    "count": 149
+                },
+                {
+                    "length": 6,
+                    "count": 41
+                },
+                {
+                    "length": 8,
+                    "count": 15
+                },
+                {
+                    "length": 10,
+                    "count": 2
+                },
+                {
+                    "length": 12,
+                    "count": 1
+                },
+                {
+                    "length": 14,
+                    "count": 2
+                }
+            ]
+        }
+    }
+}

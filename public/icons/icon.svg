@@ -1,0 +1,22 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#ea580c"/>
+  
+  <!-- Chess piece silhouette (simplified knight) -->
+  <path d="M180 380 L180 340 L200 340 L200 320 L220 320 L220 300 L240 300 L240 280 L260 280 L260 260 L280 260 L280 240 L300 240 L300 220 L320 220 L320 200 L340 200 L340 180 L360 180 L360 160 L380 160 L380 140 L400 140 L400 120 L420 120 L420 100 L400 100 L400 80 L380 80 L380 60 L360 60 L360 40 L340 40 L340 20 L320 20 L320 40 L300 40 L300 60 L280 60 L280 80 L260 80 L260 100 L240 100 L240 120 L220 120 L220 140 L200 140 L200 160 L180 160 L180 180 L160 180 L160 200 L140 200 L140 220 L120 220 L120 240 L100 240 L100 260 L120 260 L120 280 L140 280 L140 300 L160 300 L160 320 L180 320 L180 340 L200 340 L200 360 L220 360 L220 380 L240 380 L240 400 L260 400 L260 420 L280 420 L280 440 L300 440 L300 460 L320 460 L320 480 L340 480 L340 460 L360 460 L360 440 L380 440 L380 420 L400 420 L400 400 L420 400 L420 380 L400 380 L400 360 L380 360 L380 340 L360 340 L360 320 L340 320 L340 300 L320 300 L320 280 L300 280 L300 260 L280 260 L280 240 L260 240 L260 220 L240 220 L240 200 L220 200 L220 180 L200 180 L200 160 L180 160 Z" fill="white"/>
+  
+  <!-- Simplified chess piece -->
+  <g transform="translate(156, 100)">
+    <!-- Knight head -->
+    <path d="M50 50 Q80 30 120 50 Q140 70 130 100 Q120 120 100 130 L100 150 L80 150 L80 130 Q60 120 50 100 Q40 70 50 50 Z" fill="white"/>
+    
+    <!-- Knight body -->
+    <rect x="60" y="140" width="80" height="120" rx="10" fill="white"/>
+    
+    <!-- Base -->
+    <rect x="40" y="250" width="120" height="30" rx="15" fill="white"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="256" y="400" font-family="Arial, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="white">C</text>
+</svg>
