@@ -6,7 +6,7 @@ A Next.js-based chess training application that helps users improve their chess 
 
 Before you begin, ensure you have the following installed on your system:
 
-- **Node.js** (v18.18.0 or higher)
+- **Node.js** (v22.12.0 or higher)
   - Download from [nodejs.org](https://nodejs.org/)
   - Verify installation: `node --version`
 
