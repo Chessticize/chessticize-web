@@ -222,6 +222,22 @@ export async function apiPut(
 }
 
 /**
+ * Convenience method for PATCH requests
+ */
+export async function apiPatch(
+  url: string,
+  data?: any,
+  skipAuth: boolean = false,
+  abortSignal?: AbortSignal
+): Promise<Response> {
+  return apiRequest(url, {
+    method: 'PATCH',
+    body: data !== undefined ? JSON.stringify(data) : undefined,
+    signal: abortSignal,
+  }, skipAuth)
+}
+
+/**
  * Convenience method for DELETE requests
  */
 export async function apiDelete(

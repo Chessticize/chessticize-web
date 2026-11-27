@@ -1,4 +1,232 @@
-// Stockfish wrapper that mimics the legacy site's Sf167Web interface
+// Stockfish wrapper providing a consistent { uci, listen, terminate } engine interface.
+// Prefers multi-threaded sf16-7.js when cross-origin isolation (SharedArrayBuffer) is active,
+// and falls back to the bundled single-threaded stockfish-nnue-16-single.js Web Worker
+// whenever cross-origin isolation is unavailable (e.g. SPA navigation from / or /auth)
+// or multi-threaded pthread initialization fails/times out (e.g. mobile Safari memory limits).
+
+const SF16_THREADED_SCRIPT = '/stockfish/sf16-7.js'
+const SF16_SINGLE_WORKER = '/stockfish/stockfish-nnue-16-single.js'
+const THREADED_INIT_TIMEOUT_MS = 2000
+const WORKER_INIT_TIMEOUT_MS = 6000
+
+let threadedScriptLoadPromise = null
+
+function canUseThreadedEngine() {
+  return (
+    typeof window !== 'undefined' &&
+    window.crossOriginIsolated === true &&
+    typeof SharedArrayBuffer !== 'undefined'
+  )
+}
+
+function withTimeout(promise, timeoutMs, message) {
+  let timer = null
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), timeoutMs)
+  })
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timer) clearTimeout(timer)
+  })
+}
+
+function loadThreadedScript() {
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('Stockfish requires a browser environment'))
+  }
+
+  if (typeof window.Sf167Web === 'function') {
+    return Promise.resolve(window.Sf167Web)
+  }
+
+  if (threadedScriptLoadPromise) {
+    return threadedScriptLoadPromise
+  }
+
+  threadedScriptLoadPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${SF16_THREADED_SCRIPT}"]`)
+
+    const waitForGlobal = () => {
+      let attempts = 0
+      const maxAttempts = 20
+      const check = () => {
+        attempts++
+        if (typeof window.Sf167Web === 'function') {
+          resolve(window.Sf167Web)
+        } else if (attempts >= maxAttempts) {
+          threadedScriptLoadPromise = null
+          reject(new Error('Sf167Web not available after script load'))
+        } else {
+          setTimeout(check, attempts < 5 ? 50 : 100)
+        }
+      }
+      check()
+    }
+
+    if (existing) {
+      waitForGlobal()
+      return
+    }
+
+    const script = document.createElement('script')
+    script.src = SF16_THREADED_SCRIPT
+    script.async = true
+    script.onload = waitForGlobal
+    script.onerror = () => {
+      script.remove()
+      threadedScriptLoadPromise = null
+      reject(new Error(`Failed to load ${SF16_THREADED_SCRIPT}`))
+    }
+    document.head.appendChild(script)
+  })
+
+  return threadedScriptLoadPromise
+}
+
+function normalizeEngine(rawEngine, onTerminate) {
+  let currentListener = null
+
+  const dispatch = (raw) => {
+    if (!currentListener) return
+    const text = typeof raw === 'string' ? raw : raw?.data ?? String(raw ?? '')
+    for (const line of text.split(/\r?\n/)) {
+      if (line) currentListener(line)
+    }
+  }
+
+  if (typeof rawEngine.uci === 'function') {
+    rawEngine.listen = dispatch
+    return {
+      uci(command) {
+        rawEngine.uci(command)
+      },
+      get listen() {
+        return currentListener
+      },
+      set listen(callback) {
+        currentListener = typeof callback === 'function' ? callback : null
+        rawEngine.listen = dispatch
+      },
+      terminate() {
+        currentListener = null
+        rawEngine.listen = null
+        if (typeof rawEngine.terminate === 'function') {
+          rawEngine.terminate()
+        }
+        onTerminate?.()
+      },
+    }
+  }
+
+  if (typeof rawEngine.postMessage === 'function') {
+    rawEngine.onmessage = (event) => dispatch(event?.data ?? event)
+    return {
+      uci(command) {
+        rawEngine.postMessage(command)
+      },
+      get listen() {
+        return currentListener
+      },
+      set listen(callback) {
+        currentListener = typeof callback === 'function' ? callback : null
+      },
+      terminate() {
+        currentListener = null
+        rawEngine.onmessage = null
+        if (typeof rawEngine.terminate === 'function') {
+          rawEngine.terminate()
+        }
+        onTerminate?.()
+      },
+    }
+  }
+
+  throw new Error('Stockfish engine does not expose a supported UCI interface')
+}
+
+function waitForUciOk(engine, timeoutMs) {
+  return withTimeout(
+    new Promise((resolve) => {
+      const prevListen = engine.listen
+      engine.listen = (line) => {
+        if (typeof prevListen === 'function') prevListen(line)
+        if (line === 'uciok' || line.startsWith('uciok')) {
+          engine.listen = prevListen
+          resolve(engine)
+        }
+      }
+      engine.uci('uci')
+    }),
+    timeoutMs,
+    'Stockfish UCI handshake timed out'
+  )
+}
+
+async function initThreadedEngine() {
+  const Sf167Web = await withTimeout(
+    loadThreadedScript(),
+    THREADED_INIT_TIMEOUT_MS,
+    'Timed out loading Stockfish threaded script'
+  )
+
+  const rawEngine = await withTimeout(
+    Sf167Web(),
+    THREADED_INIT_TIMEOUT_MS,
+    'Timed out initializing Stockfish threaded WASM workers'
+  )
+
+  const adapter = normalizeEngine(rawEngine)
+  try {
+    await waitForUciOk(adapter, THREADED_INIT_TIMEOUT_MS)
+    return adapter
+  } catch (error) {
+    adapter.terminate()
+    throw error
+  }
+}
+
+async function initSingleThreadedWorker() {
+  if (typeof Worker === 'undefined') {
+    throw new Error('Web Workers are not supported in this browser')
+  }
+
+  const worker = new Worker(SF16_SINGLE_WORKER)
+
+  try {
+    const adapter = normalizeEngine(worker)
+
+    await withTimeout(
+      new Promise((resolve, reject) => {
+        const handleError = (event) => {
+          const message = event?.message || 'Stockfish worker failed to load'
+          reject(new Error(message))
+        }
+        worker.addEventListener?.('error', handleError, { once: true })
+        worker.onerror = handleError
+
+        adapter.listen = (line) => {
+          if (line === 'uciok' || line.startsWith('uciok')) {
+            worker.onerror = null
+            adapter.listen = null
+            resolve()
+          }
+        }
+
+        adapter.uci('uci')
+      }),
+      WORKER_INIT_TIMEOUT_MS,
+      'Timed out initializing single-threaded Stockfish worker'
+    )
+
+    // The bundled single-threaded build does not ship the 40MB NNUE weights file;
+    // explicitly switch to Stockfish 16 classical eval for immediate, reliable analysis.
+    adapter.uci('setoption name Use NNUE value false')
+    return adapter
+  } catch (error) {
+    worker.terminate()
+    throw error
+  }
+}
+
 class StockfishWrapper {
   constructor() {
     this.engine = null
@@ -9,189 +237,61 @@ class StockfishWrapper {
   async init() {
     if (this.engine) return this.engine
 
-    try {
-      if (typeof window !== 'undefined') {
-        // Try to load the local Stockfish file first (like legacy site)
-        try {
-          console.log('Trying to load local Stockfish from /stockfish/sf16-7.js...')
-
-          // Load the script dynamically to avoid build-time resolution issues
-          const script = document.createElement('script')
-          script.src = '/stockfish/sf16-7.js'
-
-          await new Promise((resolve, reject) => {
-            script.onload = () => {
-              console.log('Stockfish script loaded successfully')
-              // Check immediately if Sf167Web is available
-              if (window.Sf167Web) {
-                console.log('✓ Sf167Web immediately available after script load')
-                resolve()
-              } else {
-                console.log('Sf167Web not immediately available, waiting briefly...')
-                // Reduced delay for faster initialization
-                setTimeout(() => {
-                  if (window.Sf167Web) {
-                    console.log('✓ Sf167Web available after brief delay')
-                    resolve()
-                  } else {
-                    console.log('Sf167Web still not available, continuing to polling check')
-                    resolve() // Continue to the polling mechanism
-                  }
-                }, 100) // Reduced from 300ms to 100ms
-              }
-            }
-            script.onerror = (error) => {
-              console.error('Failed to load Stockfish script:', error)
-              reject(error)
-            }
-
-            // Add script with higher priority
-            script.async = false // Load synchronously for faster execution
-            document.head.appendChild(script)
-          })
-
-          // Wait for Sf167Web to be available on window with optimized timing
-          await new Promise((resolve, reject) => {
-            let attempts = 0
-            const maxAttempts = 20 // Reduced from 50 to 20 (2 seconds max)
-
-            const checkSf167Web = () => {
-              attempts++
-
-              if (window.Sf167Web) {
-                console.log('✓ Sf167Web found on window object')
-                resolve()
-              } else if (attempts >= maxAttempts) {
-                console.error('Sf167Web not available after timeout. Available properties:',
-                  Object.keys(window).filter(k => k.toLowerCase().includes('sf') || k.toLowerCase().includes('stock')))
-                reject(new Error('Sf167Web not available after timeout'))
-              } else {
-                // Use shorter intervals for faster detection
-                setTimeout(checkSf167Web, attempts < 5 ? 50 : 100) // 50ms for first 5 attempts, then 100ms
-              }
-            }
-            checkSf167Web()
-          })
-
-          // Create engine instance like legacy site: await Sf167Web()
-          console.log('Creating Stockfish engine instance...')
-          this.engine = await window.Sf167Web()
-          console.log('✓ Engine instance created:', this.engine)
-          this.isReady = true
-
-          // Set up any stored listeners
-          if (this.listeners.length > 0) {
-            const callback = this.listeners[this.listeners.length - 1] // Use the latest listener
-            this.engine.listen = callback
-            console.log('✓ Listener attached to engine')
-          }
-
-          console.log('✓ Local Stockfish loaded successfully')
-          return this.engine
-
-        } catch (localError) {
-          console.error('Local Stockfish loading failed:', localError.message)
-
-          // Try CDN approach as fallback
-          try {
-            console.log('Trying CDN fallback...')
-
-            const script = document.createElement('script')
-            script.src = 'https://cdn.jsdelivr.net/npm/stockfish@16.0.0/src/stockfish.js'
-
-            await new Promise((resolve, reject) => {
-              script.onload = resolve
-              script.onerror = reject
-              document.head.appendChild(script)
-            })
-
-            // Wait for Stockfish to be available
-            await new Promise((resolve, reject) => {
-              let attempts = 0
-              const maxAttempts = 50 // 5 seconds
-
-              const checkStockfish = () => {
-                attempts++
-                if (window.Stockfish) {
-                  resolve()
-                } else if (attempts >= maxAttempts) {
-                  reject(new Error('Stockfish not available after timeout'))
-                } else {
-                  setTimeout(checkStockfish, 100)
-                }
-              }
-              checkStockfish()
-            })
-
-            // Create engine instance
-            this.engine = new window.Stockfish()
-            this.isReady = true
-
-            // Set up message handling for any stored listeners
-            if (this.listeners.length > 0) {
-              const callback = this.listeners[this.listeners.length - 1] // Use the latest listener
-              this.engine.onmessage = (event) => {
-                const message = event.data || event
-                callback(message)
-              }
-            }
-
-            console.log('✓ CDN Stockfish loaded successfully')
-            return this.engine
-
-          } catch (cdnError) {
-            console.error('CDN loading also failed:', cdnError.message)
-            throw new Error('Failed to load Stockfish from both local files and CDN. Please ensure Stockfish files are available.')
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Failed to initialize Stockfish:', error)
-      throw error
+    if (typeof window === 'undefined') {
+      throw new Error('Stockfish can only be initialized in the browser')
     }
+
+    let threadedError = null
+    if (canUseThreadedEngine()) {
+      try {
+        this.engine = await initThreadedEngine()
+      } catch (error) {
+        threadedError = error
+        console.warn(
+          'Multi-threaded Stockfish unavailable, falling back to single-threaded worker:',
+          error instanceof Error ? error.message : error
+        )
+      }
+    }
+
+    if (!this.engine) {
+      try {
+        this.engine = await initSingleThreadedWorker()
+      } catch (workerError) {
+        const detail = threadedError
+          ? `threaded: ${threadedError.message}; single-threaded: ${workerError.message}`
+          : workerError.message
+        throw new Error(`Failed to initialize Stockfish engine (${detail})`)
+      }
+    }
+
+    this.isReady = true
+
+    if (this.listeners.length > 0) {
+      this.engine.listen = this.listeners[this.listeners.length - 1]
+    }
+
+    return this.engine
   }
 
-  // Legacy site interface: engine.uci(command)
   uci(command) {
     if (this.engine) {
-      if (this.engine.uci) {
-        // Real Stockfish engine (like legacy site)
-        this.engine.uci(command)
-      } else if (this.engine.postMessage) {
-        // Web Worker style
-        this.engine.postMessage(command)
-      } else {
-        console.warn('Engine does not support UCI commands')
-      }
+      this.engine.uci(command)
     }
   }
 
-  // Legacy site interface: engine.listen = callback
   set listen(callback) {
     if (this.engine) {
-      if (this.engine.listen !== undefined) {
-        // Real Stockfish engine (like legacy site)
-        this.engine.listen = callback
-      } else if (this.engine.onmessage !== undefined) {
-        // Web Worker style - set up message handler
-        this.engine.onmessage = (event) => {
-          const message = event.data || event
-          callback(message)
-        }
-      } else {
-        console.warn('Engine does not support message listening')
-      }
+      this.engine.listen = callback
     } else {
-      // Store for later when engine is ready
-      this.listeners = [callback]
+      this.listeners = callback ? [callback] : []
     }
   }
 
-  // Additional method for adding listeners
   addListener(callback) {
     this.listeners.push(callback)
     if (this.engine) {
-      this.listen = callback
+      this.engine.listen = callback
     }
   }
 
@@ -205,13 +305,9 @@ class StockfishWrapper {
   }
 }
 
-// Export as default
 const createStockfish = () => new StockfishWrapper()
 export default createStockfish
 
-// Also make it available globally for compatibility
 if (typeof window !== 'undefined') {
   window.StockfishWrapper = StockfishWrapper
-  window.Stockfish = window.Stockfish || null
-  window.Sf167Web = window.Sf167Web || null
 }

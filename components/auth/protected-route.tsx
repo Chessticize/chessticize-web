@@ -8,8 +8,8 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthContext } from './auth-provider'
-import { APP_CONFIG } from '@/lib/config'
 import { hasValidAuth } from '@/lib/auth/tokens'
+import { navigateToAuth } from '@/lib/auth/navigation'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -22,12 +22,12 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
 
   useEffect(() => {
     if (!hasValidAuth()) {
-      router.push(APP_CONFIG.DEFAULT_LOGOUT_REDIRECT)
+      navigateToAuth(router)
       return
     }
 
     if (!isLoading && !isAuthenticated) {
-      router.push(APP_CONFIG.DEFAULT_LOGOUT_REDIRECT)
+      navigateToAuth(router)
     }
   }, [isAuthenticated, isLoading, router])
 

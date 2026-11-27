@@ -178,14 +178,13 @@ describe('SprintSession', () => {
       expect(screen.getByTestId('chess-board')).toBeInTheDocument()
     }, { timeout: 3000 })
 
-    // Should show turn indicator
+    // Should show explicit side-to-move turn indicator
     await waitFor(() => {
-      expect(screen.getByText('Your turn')).toBeInTheDocument()
+      expect(screen.getByText("Black's turn")).toBeInTheDocument()
     }, { timeout: 1000 })
 
-    // Should show the correct puzzle color (black puzzle from starting position FEN where white is active)
-    // Since FEN has 'w' (white to move), the puzzle is for black (opposite color)
-    expect(screen.getByText('Find the best move for black.')).toBeInTheDocument()
+    // Should show the concise puzzle prompt
+    expect(screen.getByText('Find the best move')).toBeInTheDocument()
   })
 
   it('should show consistent puzzle color throughout the puzzle', async () => {
@@ -198,11 +197,10 @@ describe('SprintSession', () => {
 
     // Should show black puzzle (since starting FEN has white to move)
     await waitFor(() => {
-      expect(screen.getByText('Find the best move for black.')).toBeInTheDocument()
+      expect(screen.getByText("Black's turn")).toBeInTheDocument()
     }, { timeout: 1000 })
 
     // The puzzle color should remain consistent and not change during the puzzle
-    // (Unlike the previous dynamic turn indicator, this is static for the puzzle)
-    expect(screen.getByText('Find the best move for black.')).toBeInTheDocument()
+    expect(screen.getByText("Black's turn")).toBeInTheDocument()
   })
 })

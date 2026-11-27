@@ -17,3 +17,16 @@ export function resolveProductionStorageState(
 
   return storageStatePath
 }
+
+export function resolveVercelProtectionHeaders(
+  bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+): Record<string, string> | undefined {
+  if (!bypassSecret) {
+    return undefined
+  }
+
+  return {
+    'x-vercel-protection-bypass': bypassSecret,
+    'x-vercel-set-bypass-cookie': 'samesite=none',
+  }
+}

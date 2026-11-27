@@ -106,7 +106,7 @@ export function MobileCard({
 
   return (
     <div className={cn(
-      "bg-white rounded-xl shadow-sm border border-gray-200",
+      "bg-white rounded-xl shadow-sm border border-slate-200",
       paddingClasses[padding],
       hover && "hover:shadow-md transition-shadow duration-200",
       className
@@ -145,10 +145,10 @@ export function MobileButton({
   }
 
   const variantClasses = {
-    'primary': 'bg-orange-600 text-white hover:bg-orange-700 focus:ring-orange-500',
-    'secondary': 'bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500',
-    'outline': 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-500',
-    'ghost': 'text-gray-700 hover:bg-gray-100 focus:ring-gray-500'
+    'primary': 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
+    'secondary': 'bg-slate-100 text-slate-900 hover:bg-slate-200 focus:ring-slate-500',
+    'outline': 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus:ring-slate-500',
+    'ghost': 'text-slate-700 hover:bg-slate-100 focus:ring-slate-500'
   }
 
   return (

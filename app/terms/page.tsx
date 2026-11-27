@@ -1,5 +1,3 @@
-"use client"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
@@ -8,17 +6,13 @@ export default function TermsOfService() {
   const effectiveDate = "January 1, 2024"
   const lastUpdated = "8/10/2025"
 
-  const scrollToSection = (sectionId: string) => {
-    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' })
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         <div className="mb-8">
           <Link
             href="/auth"
-            className="inline-flex items-center text-orange-600 hover:text-orange-700 font-medium transition-colors"
+            className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium transition-colors"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Sign In
@@ -28,9 +22,9 @@ export default function TermsOfService() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Table of Contents - Desktop Sidebar */}
           <div className="lg:col-span-1">
-            <Card className="sticky top-8">
+            <Card className="sticky top-8 border-slate-200">
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg text-orange-600">Table of Contents</CardTitle>
+                <CardTitle className="text-base font-semibold text-slate-900">Table of Contents</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <nav className="space-y-1">
@@ -50,13 +44,13 @@ export default function TermsOfService() {
                     { id: 'changes', title: '13. Changes to Terms' },
                     { id: 'contact', title: '14. Contact Information' }
                   ].map((item) => (
-                    <button
+                    <a
                       key={item.id}
-                      onClick={() => scrollToSection(item.id)}
-                      className="block w-full text-left text-sm text-gray-600 hover:text-orange-600 py-1 px-2 rounded hover:bg-orange-50 transition-colors"
+                      href={`#${item.id}`}
+                      className="block w-full text-left text-sm text-slate-600 hover:text-blue-600 py-1 px-2 rounded hover:bg-blue-50 transition-colors"
                     >
                       {item.title}
-                    </button>
+                    </a>
                   ))}
                 </nav>
               </CardContent>
@@ -65,9 +59,9 @@ export default function TermsOfService() {
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            <Card>
-              <CardHeader className="border-b border-gray-200">
-                <CardTitle className="text-4xl font-bold text-orange-600 mb-2">Terms of Service</CardTitle>
+            <Card className="border-slate-200">
+              <CardHeader className="border-b border-slate-200">
+                <CardTitle className="text-3xl font-semibold tracking-tight text-slate-900 mb-2">Terms of Service</CardTitle>
                 <div className="space-y-1">
                   <p className="text-gray-600">
                     <strong>Effective Date:</strong> {effectiveDate}

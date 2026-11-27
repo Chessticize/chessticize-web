@@ -182,32 +182,25 @@ export function CustomSprintSelection({ onStartSprint, onCancel, initialConfig }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="bg-purple-600 p-3 rounded-2xl">
-                <Settings className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Custom Sprint</h1>
-                <p className="text-gray-600">Create your personalized puzzle sprint</p>
-              </div>
-            </div>
-            <Button variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">Custom Sprint</h1>
+            <p className="text-sm sm:text-base text-slate-500 mt-1">Create your personalized puzzle sprint</p>
           </div>
+          <Button variant="outline" className="self-start sm:self-auto bg-white border-slate-200 text-slate-700 hover:bg-slate-50" onClick={onCancel}>
+            Cancel
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Configuration Panel */}
-          <Card className="bg-white shadow-lg">
+          <Card className="bg-white border-slate-200 shadow-sm">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Settings className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+                <Settings className="h-4 w-4 text-blue-600" />
                 <span>Sprint Configuration</span>
               </CardTitle>
             </CardHeader>
@@ -349,7 +342,7 @@ export function CustomSprintSelection({ onStartSprint, onCancel, initialConfig }
               <Button 
                 onClick={handleStartSprint}
                 disabled={!validation.isValid}
-                className="w-full bg-purple-600 hover:bg-purple-700"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 size="lg"
               >
                 <Play className="h-4 w-4 mr-2" />
@@ -359,57 +352,55 @@ export function CustomSprintSelection({ onStartSprint, onCancel, initialConfig }
           </Card>
 
           {/* Previous Configurations */}
-          <Card className="bg-white shadow-lg">
+          <Card className="bg-white border-slate-200 shadow-sm">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Zap className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+                <Zap className="h-4 w-4 text-blue-600" />
                 <span>Previous Custom Sprints</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               {previousConfigs.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Target className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No previous custom sprints found</p>
-                  <p className="text-sm">Create your first custom sprint above!</p>
+                <div className="text-center py-8 text-slate-500">
+                  <Target className="h-8 w-8 text-slate-300 mx-auto mb-3" />
+                  <p className="text-sm font-medium text-slate-700">No previous custom sprints found</p>
+                  <p className="text-xs text-slate-500 mt-1">Create your first custom sprint on the left.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="divide-y divide-slate-100">
                   {previousConfigs.map(({ eloType, config: prevConfig, elo, updatedAt }) => (
                     <div
                       key={eloType}
-                      className="border border-gray-200 rounded-lg p-4 transition-all duration-300 hover:shadow-xl hover:scale-105 hover:bg-gray-50"
+                      className="py-3.5 first:pt-0 last:pb-0 transition-colors"
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <Badge variant={prevConfig.mode === 'arrowduel' ? 'default' : 'secondary'}>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="secondary" className="bg-slate-100 text-slate-700 shadow-none">
                             {prevConfig.mode === 'arrowduel' ? 'Arrow Duel' : 'Regular'}
                           </Badge>
                           {prevConfig.mode === 'regular' && (
-                            <Badge variant="secondary">
+                            <span className="text-sm font-medium text-slate-900">
                               {getThemeDisplayName(prevConfig.theme)}
-                            </Badge>
+                            </span>
                           )}
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-slate-500 tabular-nums">
                             {prevConfig.durationMinutes}m / {prevConfig.perPuzzleSeconds}s
                           </span>
                         </div>
-                        <Badge variant="outline">
-                          ELO: {elo}
+                        <Badge variant="outline" className="bg-slate-50 border-slate-200 text-slate-700 font-medium tabular-nums shrink-0">
+                          Elo: {elo}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex flex-col">
-                          <span className="text-sm text-gray-500">
-                            {calculateTargetPuzzles(prevConfig.durationMinutes, prevConfig.perPuzzleSeconds)} puzzles
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            Last played: {new Date(updatedAt).toLocaleDateString()}
-                          </span>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-xs text-slate-500 tabular-nums">
+                          <span>{calculateTargetPuzzles(prevConfig.durationMinutes, prevConfig.perPuzzleSeconds)} puzzles</span>
+                          <span className="text-slate-300">·</span>
+                          <span>Last played: {new Date(updatedAt).toLocaleDateString()}</span>
                         </div>
                         <Button
                           variant="outline"
                           size="sm"
+                          className="border-slate-200 text-slate-700 hover:bg-slate-50"
                           onClick={() => handleLoadPreviousConfig(prevConfig)}
                         >
                           Load Config

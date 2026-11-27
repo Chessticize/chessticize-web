@@ -5,6 +5,7 @@ const host = '127.0.0.1'
 
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: /production-v2-validation\.spec\.ts/,
   timeout: 60_000,
   expect: {
     timeout: 30_000,
@@ -31,6 +32,16 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'mobile-chromium',
+      testMatch: /(core-routes|i18n)\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+        hasTouch: true,
+      },
     },
   ],
 })

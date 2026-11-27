@@ -1,11 +1,21 @@
 import React from "react"
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import PuzzleSprintPage from "@/app/puzzle-sprint/page"
 import { useSprintStats } from "@/hooks/useSprintStats"
 import { useUserContext } from "@/hooks/useUserContext"
+import { apiPut } from "@/lib/auth/api-client"
 import { V2SprintStatsSummary } from "@/lib/api/library"
 import { getArrowDuelEloType, getBlitzEloType, getStandardEloType } from "@/lib/sprint-config"
 import { vi } from "vitest"
+
+vi.mock("@/lib/auth/api-client", () => ({
+  apiPut: vi.fn(),
+}))
+
+vi.mock("@/hooks/use-toast", () => ({
+  toast: vi.fn(),
+}))
 
 vi.mock("@/components/navigation", () => ({
   default: () => <nav data-testid="navigation" />,
@@ -25,6 +35,7 @@ vi.mock("@/hooks/useSprintStats", () => ({
 
 const mockUseUserContext = vi.mocked(useUserContext)
 const mockUseSprintStats = vi.mocked(useSprintStats)
+const mockApiPut = vi.mocked(apiPut)
 
 describe("PuzzleSprintPage", () => {
   beforeEach(() => {
@@ -118,12 +129,73 @@ describe("PuzzleSprintPage", () => {
       group_length: 1,
     }, true)
     expect(screen.getByText("Total Sprints: 5")).toBeInTheDocument()
-    expect(screen.getByText("Sprints today: 2")).toBeInTheDocument()
-    expect(screen.getByText("Correct today: 11")).toBeInTheDocument()
-    expect(screen.getByText("Time today: 5m")).toBeInTheDocument()
+    expect(screen.getByText("Sprints today")).toBeInTheDocument()
+    expect(screen.getByText("2")).toBeInTheDocument()
+    expect(screen.getByText("Correct today")).toBeInTheDocument()
+    expect(screen.getByText("11")).toBeInTheDocument()
+    expect(screen.getByText("Time today")).toBeInTheDocument()
+    expect(screen.getByText("5m")).toBeInTheDocument()
     expect(screen.getByText("Elo: 940")).toBeInTheDocument()
     expect(screen.getByText("Elo: 905")).toBeInTheDocument()
     expect(screen.getByText("Elo: 880")).toBeInTheDocument()
+  })
+
+  it("edits a run's training ELO from Practice Home Edit mode via v2 ELO endpoint", async () => {
+    const refreshUser = vi.fn().mockResolvedValue(undefined)
+    mockUseUserContext.mockReturnValue({
+      user: {
+        id: "user-1",
+        email: "alice@example.com",
+        registered_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+        last_sign_in_at: "2026-01-01T00:00:00Z",
+        elos: [
+          {
+            elo_type: getStandardEloType(),
+            rating: 940,
+            rating_deviation: 80,
+            is_provisional: false,
+            updated_at: "2026-06-01T00:00:00Z",
+          },
+        ],
+        chess_profiles: [],
+      },
+      isLoading: false,
+      error: null,
+      refreshUser,
+      updateChessProfiles: vi.fn(),
+    })
+    mockApiPut.mockResolvedValue(
+      new Response(JSON.stringify({ updated: [{ elo_type: "mixed 5/20", rating: 1100 }] }), {
+        status: 200,
+      }),
+    )
+
+    render(<PuzzleSprintPage />)
+
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }))
+    await userEvent.click(screen.getByRole("button", { name: "Edit Standard Sprint" }))
+
+    const eloInput = screen.getByLabelText("Training ELO")
+    expect(eloInput).toHaveValue(940)
+    await userEvent.clear(eloInput)
+    await userEvent.type(eloInput, "1100")
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+
+    await waitFor(() => {
+      expect(mockApiPut).toHaveBeenCalledTimes(1)
+    })
+    expect(new URL(mockApiPut.mock.calls[0][0]).pathname).toBe("/api/v2/me/elos")
+    expect(mockApiPut.mock.calls[0][1]).toEqual({
+      updates: [
+        {
+          elo_type: "mixed 5/20",
+          rating: 1100,
+          rating_deviation: 50.0,
+        },
+      ],
+    })
+    expect(refreshUser).toHaveBeenCalledTimes(1)
   })
 })
 

@@ -1,5 +1,6 @@
 // Central configuration for chess puzzle themes
 // This file contains the display names and filtering rules for all theme-based charts
+import { translateTheme, type SupportedLocale } from './i18n'
 
 // Tags to exclude as they are not meaningful or specific tactical patterns
 export const EXCLUDED_TAGS = new Set([
@@ -88,9 +89,14 @@ export const THEME_DISPLAY_NAMES: Record<string, string> = {
 
 /**
  * Get display name for a chess puzzle theme tag
- * Handles various case formats and provides fallback formatting
+ * Handles various case formats and provides localized lookup across all 9 supported locales
  */
-export function getThemeDisplayName(tag: string): string {
+export function getThemeDisplayName(tag: string, locale: SupportedLocale = 'en'): string {
+  const localized = translateTheme(tag, locale)
+  if (localized) {
+    return localized
+  }
+
   // Try exact match first
   if (THEME_DISPLAY_NAMES[tag]) {
     return THEME_DISPLAY_NAMES[tag]
@@ -128,12 +134,13 @@ export function isThemeExcluded(tag: string): boolean {
  */
 export function processThemeData<T extends { tag: string }>(
   data: T[],
-  transform?: (item: T, displayName: string) => any
+  transform?: (item: T, displayName: string) => any,
+  locale: SupportedLocale = 'en',
 ): any[] {
   return data
     .filter(item => !isThemeExcluded(item.tag))
     .map(item => {
-      const displayName = getThemeDisplayName(item.tag)
+      const displayName = getThemeDisplayName(item.tag, locale)
       return transform ? transform(item, displayName) : { ...item, displayName }
     })
 }

@@ -1,8 +1,14 @@
 "use client"
 
-import React, { createContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useState, useEffect, useRef, ReactNode } from 'react'
+import { useTheme } from 'next-themes'
 import { useAuthContext } from '@/components/auth/auth-provider'
+import { useI18n } from '@/components/i18n/i18n-provider'
 import { getCurrentUser } from '@/lib/api/auth'
+import { normalizeThemeMode } from '@/lib/api/preferences'
+import { hydrateBoardThemesFromPreferences } from '@/lib/chess/board-themes'
+import { hydratePracticeRunsFromPreferences } from '@/lib/practice-runs'
+import { normalizeLanguagePreference } from '@/lib/i18n'
 import { User, ChessProfile } from '@/lib/auth/types'
 
 export type { ChessProfile }
@@ -31,9 +37,12 @@ export function useUserContext() {
 
 export function UserProvider({ children }: UserProviderProps) {
   const { isAuthenticated, isLoading: authLoading } = useAuthContext()
+  const { hydratePreference } = useI18n()
+  const { setTheme } = useTheme()
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const hydratedUserIdRef = useRef<string | null>(null)
 
   const refreshUser = async () => {
     if (!isAuthenticated) return
@@ -47,6 +56,25 @@ export function UserProvider({ children }: UserProviderProps) {
       console.log('User bootstrap data:', userData)
 
       setUser(userData)
+
+      if (userData.id && hydratedUserIdRef.current !== userData.id) {
+        hydratedUserIdRef.current = userData.id
+        const prefs = userData.preferences
+        if (prefs) {
+          if (prefs.locale) {
+            hydratePreference(normalizeLanguagePreference(prefs.locale))
+          }
+          if (prefs.theme_mode) {
+            setTheme(normalizeThemeMode(prefs.theme_mode))
+          }
+          if (prefs.light_board_theme || prefs.dark_board_theme || prefs.board_theme) {
+            hydrateBoardThemesFromPreferences(prefs)
+          }
+          if (Array.isArray(prefs.practice_runs)) {
+            hydratePracticeRunsFromPreferences(prefs)
+          }
+        }
+      }
 
     } catch (error) {
       console.error('Error loading user data:', error)
@@ -68,6 +96,7 @@ export function UserProvider({ children }: UserProviderProps) {
       refreshUser()
     } else if (!isAuthenticated && !authLoading) {
       // Clear user data when not authenticated
+      hydratedUserIdRef.current = null
       setUser(null)
       setError(null)
     }

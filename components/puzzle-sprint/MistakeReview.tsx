@@ -1,284 +1,288 @@
 "use client"
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
-import { Chess } from 'chess.js'
-
-import React, { useState, useEffect, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { ChessBoard, ChessBoardRef } from './ChessBoard'
-import { InteractiveAnalysis } from './InteractiveAnalysis'
-import { useSprintPuzzles, SprintPuzzleAttempt, PuzzleAttemptRequest } from '@/hooks/useSprintApi'
+import React, { useEffect, useMemo, useRef, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { ChessBoard, type ChessBoardRef } from "./ChessBoard"
+import { ArrowDuelIndicator, TurnIndicator } from "./SprintIndicators"
+import { PositionAnalyzerPanel } from "@/components/chess/PositionAnalyzerPanel"
+import Navigation from "@/components/navigation"
+import { MobileContainer, MobileLayout } from "@/components/ui/mobile-layout"
+import { preloadStockfishEngine } from "@/hooks/useStockfish"
 import {
+  useSprintPuzzles,
+  type SprintPuzzleAttempt,
+  type PuzzleAttemptRequest,
+} from "@/hooks/useSprintApi"
+import {
+  areCandidateMovesLegalOnFen,
+  deterministicArrowOrder,
+  uciLineToSan,
+  uciMoveToSan,
+} from "@/lib/chess/san-helpers"
+import { cn } from "@/lib/utils"
+import { useI18n } from "@/components/i18n/i18n-provider"
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Check,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  X,
-  Copy as CopyIcon,
-  Check as CheckIcon,
-  ExternalLink,
   Clock,
-  Target,
-  AlertTriangle,
-  RotateCcw,
-  Undo2,
+  Copy,
+  Cpu,
   Eye,
-  Crown
-} from 'lucide-react'
+  EyeOff,
+  RotateCcw,
+  Target,
+  X,
+  XCircle,
+} from "lucide-react"
 
 interface MistakeReviewProps {
   sessionId: string
   eloType?: string
   failedAttempts?: PuzzleAttemptRequest[]
+  initialMistakes?: SprintPuzzleAttempt[]
   onClose: () => void
 }
 
-// Analysis line interface for arrows
-interface AnalysisLine {
-  moves: string[] // SAN moves for display
-  uciMoves?: string[] // UCI moves for engine commands
-  evaluation: number
-  depth: number
-  pv: string // Principal variation
-  multipv?: number // MultiPV line number (1, 2, 3)
-  isMate?: boolean // Whether this is a mate score
-  mateIn?: number // Mate in N moves (positive for white, negative for black)
+type PracticeOutcome =
+  | { kind: "correct"; chosenMove?: string }
+  | { kind: "incorrect"; chosenMove?: string }
+
+function resolveArrowDuelCandidates(
+  mistake: SprintPuzzleAttempt | undefined,
+  isArrowDuel: boolean,
+): [string, string] | undefined {
+  if (!mistake || !isArrowDuel) return undefined
+  const raw = mistake.candidate_moves?.map((m) => m.trim()).filter(Boolean)
+  if (raw && raw.length >= 2) {
+    return deterministicArrowOrder(mistake.puzzle_id, [raw[0], raw[1]])
+  }
+  const best = mistake.best_move?.trim()
+  const blunder = mistake.blunder_move?.trim() || mistake.solution_moves?.[0]?.trim()
+  if (best && blunder && best !== blunder) {
+    return deterministicArrowOrder(mistake.puzzle_id, [blunder, best])
+  }
+  return undefined
 }
 
-export function MistakeReview({ sessionId, eloType, failedAttempts, onClose }: MistakeReviewProps) {
+function resolveArrowDuelBestMove(
+  mistake: SprintPuzzleAttempt | undefined,
+  candidateMoves?: [string, string],
+): string | undefined {
+  if (!mistake) return undefined
+  if (mistake.best_move) return mistake.best_move
+  const blunder = mistake.blunder_move || mistake.solution_moves?.[0]
+  if (candidateMoves && blunder) {
+    return candidateMoves.find((m) => m.toLowerCase() !== blunder.toLowerCase())
+  }
+  return candidateMoves?.[0]
+}
+
+export function MistakeReview({
+  sessionId,
+  eloType,
+  failedAttempts,
+  initialMistakes,
+  onClose,
+}: MistakeReviewProps) {
+  const { t } = useI18n()
   const { getSprintPuzzles, isLoading, error } = useSprintPuzzles()
-  const [mistakes, setMistakes] = useState<SprintPuzzleAttempt[]>([])
+  const [mistakes, setMistakes] = useState<SprintPuzzleAttempt[]>(initialMistakes ?? [])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [analysisMode, setAnalysisMode] = useState<'retry' | 'analyze'>('retry')
-  const [analysisFen, setAnalysisFen] = useState<string>('')
-  const [puzzleSolved, setPuzzleSolved] = useState(false)
-  const [wrongMoveSquares, setWrongMoveSquares] = useState<Record<string, any>>({})
-  const [moveHistory, setMoveHistory] = useState<string[]>([]) // Track FEN history for move back
-  const [analysisLines, setAnalysisLines] = useState<AnalysisLine[]>([]) // Store analysis data for arrows
-  // Analysis move history (FEN snapshots)
-  const [positionHistory, setPositionHistory] = useState<string[]>([])
-  const [historyIndex, setHistoryIndex] = useState<number>(-1)
+  const [viewMode, setViewMode] = useState<"practice" | "analyze">("practice")
+  const [resetCount, setResetCount] = useState(0)
+  const [outcome, setOutcome] = useState<PracticeOutcome | null>(null)
+  const [showSolution, setShowSolution] = useState(false)
+  const [copied, setCopied] = useState(false)
 
-  const [blunderArrow, setBlunderArrow] = useState<AnalysisLine | null>(null) // Red arrow for blunder move in arrow duel
-
-  // Blunder follow-up flow state (after choosing the wrong move in Arrow Duel)
-  const [blunderFollowupActive, setBlunderFollowupActive] = useState(false)
-  const [blunderFollowupFen, setBlunderFollowupFen] = useState<string>('')
-  const [blunderFollowupMoves, setBlunderFollowupMoves] = useState<string[]>([])
-
-  const analysisBoardRef = useRef<ChessBoardRef>(null)
   const chessBoardRef = useRef<ChessBoardRef>(null)
 
-  // Load mistakes on component mount
   useEffect(() => {
-    if (failedAttempts && failedAttempts.length > 0) {
-      // Use client-side failed attempts if available
+    preloadStockfishEngine()
+  }, [])
 
-      // Convert PuzzleAttemptRequest to SprintPuzzleAttempt format
-      // Note: We'll need to fetch puzzle data (FEN, solution_moves, etc.) from server
-      // But we have the complete attempt data with Arrow Duel info
-      const convertedMistakes: SprintPuzzleAttempt[] = failedAttempts.map(attempt => ({
-        puzzle_id: attempt.puzzle_id,
-        sequence_in_sprint: attempt.sequence_in_sprint,
-        fen: '', // Will be populated from server data
-        solution_moves: [], // Will be populated from server data
-        rating: 0, // Will be populated from server data
-        themes: [], // Will be populated from server data
-        attempt_status: 'failed' as const,
-        user_moves: attempt.user_moves,
-        was_correct: attempt.was_correct,
-        time_taken_ms: attempt.time_taken_ms,
-        attempted_at: attempt.attempted_at,
-        attempt_type: attempt.attempt_type,
-        candidate_moves: attempt.candidate_moves,
-        chosen_move: attempt.chosen_move,
-        best_move: attempt.best_move,
-        blunder_move: attempt.blunder_move
-      }))
-
-      setMistakes(convertedMistakes)
-      // Still need to fetch puzzle details from server to get FEN, solution_moves, etc.
-      loadPuzzleDetails(convertedMistakes)
-    } else {
-      // Fallback to server-side loading
-      loadMistakes()
+  useEffect(() => {
+    if (initialMistakes && initialMistakes.length > 0) {
+      setMistakes(initialMistakes)
+      return
     }
 
+    let cancelled = false
+
     async function loadMistakes() {
-      const response = await getSprintPuzzles(sessionId, { status: 'failed' })
-      if (response && response.puzzles.length > 0) {
+      if (failedAttempts && failedAttempts.length > 0) {
+        const convertedMistakes: SprintPuzzleAttempt[] = failedAttempts.map((attempt) => ({
+          puzzle_id: attempt.puzzle_id,
+          sequence_in_sprint: attempt.sequence_in_sprint,
+          fen: "",
+          solution_moves: [],
+          rating: 0,
+          themes: [],
+          attempt_status: "failed" as const,
+          user_moves: attempt.user_moves,
+          was_correct: attempt.was_correct,
+          time_taken_ms: attempt.time_taken_ms,
+          attempted_at: attempt.attempted_at,
+          attempt_type: attempt.attempt_type,
+          candidate_moves: attempt.candidate_moves,
+          chosen_move: attempt.chosen_move,
+          best_move: attempt.best_move,
+          blunder_move: attempt.blunder_move,
+        }))
+
+        if (!cancelled) {
+          setMistakes(convertedMistakes)
+        }
+
+        const response = await getSprintPuzzles(sessionId, { status: "failed" })
+        if (!cancelled && response && response.puzzles.length > 0) {
+          const mergedMistakes = convertedMistakes.map((mistake) => {
+            const serverPuzzle = response.puzzles.find(
+              (p) => p.puzzle_id === mistake.puzzle_id,
+            )
+            if (serverPuzzle) {
+              return {
+                ...mistake,
+                fen: serverPuzzle.fen,
+                solution_moves: serverPuzzle.solution_moves,
+                rating: serverPuzzle.rating,
+                themes: serverPuzzle.themes,
+                best_move: mistake.best_move || serverPuzzle.best_move,
+                blunder_move: mistake.blunder_move || serverPuzzle.blunder_move,
+                candidate_moves: mistake.candidate_moves || serverPuzzle.candidate_moves,
+              }
+            }
+            return mistake
+          })
+          setMistakes(mergedMistakes)
+        }
+        return
+      }
+
+      const response = await getSprintPuzzles(sessionId, { status: "failed" })
+      if (!cancelled && response && response.puzzles.length > 0) {
         setMistakes(response.puzzles)
       }
     }
 
-    async function loadPuzzleDetails(convertedMistakes: SprintPuzzleAttempt[]) {
-      // Fetch puzzle details to populate missing fields
-      const response = await getSprintPuzzles(sessionId, { status: 'failed' })
-      if (response && response.puzzles.length > 0) {
-        // Merge server puzzle data with client attempt data
-        const mergedMistakes = convertedMistakes.map(mistake => {
-          const serverPuzzle = response.puzzles.find(p => p.puzzle_id === mistake.puzzle_id)
-          if (serverPuzzle) {
-            return {
-              ...mistake,
-              fen: serverPuzzle.fen,
-              solution_moves: serverPuzzle.solution_moves,
-              rating: serverPuzzle.rating,
-              themes: serverPuzzle.themes
-            }
-          }
-          return mistake
-        })
-        setMistakes(mergedMistakes)
-
-      }
+    void loadMistakes()
+    return () => {
+      cancelled = true
     }
-  }, [sessionId, getSprintPuzzles, failedAttempts])
+  }, [sessionId, getSprintPuzzles, failedAttempts, initialMistakes])
 
   const currentMistake = mistakes[currentIndex]
 
-  // Determine if this is an Arrow Duel session from ELO type
-  const isArrowDuelSession = eloType?.includes('arrowduel') ?? false
+  const isArrowDuelMistake = useMemo(() => {
+    if (!currentMistake) return false
+    if (currentMistake.attempt_type === "arrow_duel") return true
+    if (currentMistake.attempt_type === "regular") return false
+    return eloType?.includes("arrowduel") ?? false
+  }, [currentMistake, eloType])
 
-  // Helper function to check if we're at the initial position (for arrow visibility)
-  const isAtInitialPosition = (currentFen: string, initialFen: string): boolean => {
-    if (!currentFen) return true
+  const candidateMoves = useMemo(
+    () => resolveArrowDuelCandidates(currentMistake, isArrowDuelMistake),
+    [currentMistake, isArrowDuelMistake],
+  )
 
-    // Compare only the position part of FEN (first 4 parts: pieces, active color, castling, en passant)
-    // Ignore halfmove and fullmove counters which can differ
-    const getCurrentPositionPart = (fen: string) => {
-      const parts = fen.split(' ')
-      return parts.slice(0, 4).join(' ')
+  const correctMove = useMemo(
+    () => resolveArrowDuelBestMove(currentMistake, candidateMoves),
+    [currentMistake, candidateMoves],
+  )
+
+  const hasInvalidArrowDuelData = useMemo(() => {
+    if (!currentMistake || !isArrowDuelMistake) return false
+    if (!currentMistake.fen || !candidateMoves) return true
+    return !areCandidateMovesLegalOnFen(currentMistake.fen, candidateMoves)
+  }, [currentMistake, isArrowDuelMistake, candidateMoves])
+
+  const solutionSan = useMemo(() => {
+    if (!currentMistake?.fen) return []
+    if (isArrowDuelMistake && correctMove) {
+      return [uciMoveToSan(currentMistake.fen, correctMove)]
     }
+    const allSan = uciLineToSan(currentMistake.fen, currentMistake.solution_moves)
+    return allSan.length > 1 ? allSan.slice(1) : allSan
+  }, [currentMistake, isArrowDuelMistake, correctMove])
 
-    return getCurrentPositionPart(currentFen) === getCurrentPositionPart(initialFen)
+  const resetPuzzleState = () => {
+    setOutcome(null)
+    setShowSolution(false)
+    setResetCount((prev) => prev + 1)
   }
 
-
-  // Calculate consistent board orientation for the current mistake
-  const getBoardOrientation = (fenString: string, isArrowDuel: boolean): 'white' | 'black' => {
-    const activeColor = fenString.split(' ')[1]
-
-    if (isArrowDuel) {
-      // For arrow duel, the player making the move should be at the bottom
-      // If it's white's turn in FEN, white should be at bottom (black orientation)
-      // If it's black's turn in FEN, black should be at bottom (white orientation)
-      return activeColor === 'w' ? 'white' : 'black'
-    } else {
-      // For regular puzzles, we want the player (who needs to move) at the bottom
-      // If it's black's turn in FEN, black should be at bottom (white orientation)
-      // If it's white's turn in FEN, white should be at bottom (black orientation)
-      return activeColor === 'b' ? 'white' : 'black'
-    }
+  const goToIndex = (nextIndex: number) => {
+    if (nextIndex < 0 || nextIndex >= mistakes.length) return
+    setCurrentIndex(nextIndex)
+    setViewMode("practice")
+    setOutcome(null)
+    setShowSolution(false)
+    setResetCount((prev) => prev + 1)
   }
 
-  const currentOrientation = currentMistake ? getBoardOrientation(currentMistake.fen, isArrowDuelSession) : 'white'
-
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1)
-      setAnalysisMode('retry')
-      setPuzzleSolved(false)
-      setWrongMoveSquares({})
-      setAnalysisLines([]) // Clear analysis arrows
-      setBlunderArrow(null) // Clear blunder arrow
-      setBlunderFollowupActive(false)
-      setBlunderFollowupFen('')
-      setBlunderFollowupMoves([])
-    }
+  const handleRegularComplete = (isCorrect: boolean) => {
+    setOutcome({ kind: isCorrect ? "correct" : "incorrect" })
   }
 
-  const handleNext = () => {
-    if (currentIndex < mistakes.length - 1) {
-      setCurrentIndex(currentIndex + 1)
-      setAnalysisMode('retry')
-      setPuzzleSolved(false)
-      setWrongMoveSquares({})
-      setAnalysisLines([]) // Clear analysis arrows
-      setBlunderArrow(null) // Clear blunder arrow
-      setBlunderFollowupActive(false)
-      setBlunderFollowupFen('')
-      setBlunderFollowupMoves([])
-    }
+  const handleArrowDuelChosen = (move: string) => {
+    const isCorrect = Boolean(correctMove && move.toLowerCase() === correctMove.toLowerCase())
+    setOutcome({ kind: isCorrect ? "correct" : "incorrect", chosenMove: move })
   }
 
-  const handlePuzzleComplete = (success: boolean, userMoves: string[]) => {
-    if (success) {
-      setPuzzleSolved(true)
-    }
-  }
-
-  const handleWrongMove = (fromSquare: string, toSquare: string) => {
-    // Show red highlight on wrong move squares
-    setWrongMoveSquares({
-      [fromSquare]: { backgroundColor: 'rgba(239, 68, 68, 0.6)' },
-      [toSquare]: { backgroundColor: 'rgba(239, 68, 68, 0.6)' }
-    })
-
-    // Clear the highlight after a delay
-    setTimeout(() => {
-      setWrongMoveSquares({})
-    }, 800)
-  }
-
-  // Local copied state for the FEN copy button
-  const [copied, setCopied] = useState(false)
-
-  const handlePositionChange = (newFen: string, lastMove?: string) => {
-    setAnalysisFen(newFen)
-    // Keep legacy move history for potential future use
-    setMoveHistory(prev => {
-      if (prev.length === 0 || prev[prev.length - 1] !== newFen) {
-        return [...prev, newFen]
+  const handleCopyFen = async () => {
+    if (!currentMistake?.fen) return
+    const fen = currentMistake.fen.trim()
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(fen)
+      } else {
+        const ta = document.createElement("textarea")
+        ta.value = fen
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand("copy")
+        document.body.removeChild(ta)
       }
-      return prev
-    })
-    // Track analysis position history for Back navigation
-    setPositionHistory(prev => {
-      const trimmed = prev.slice(0, historyIndex + 1)
-      if (trimmed[trimmed.length - 1] !== newFen) {
-        const next = [...trimmed, newFen]
-        setHistoryIndex(next.length - 1)
-        return next
-      }
-      return prev
-    })
-  }
-
-  const handleMakeMove = (move: string) => {
-    // Call the analysis board's makeMove method through the ref
-    if (analysisBoardRef.current) {
-      analysisBoardRef.current.makeMove(move)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1200)
+    } catch (copyError) {
+      console.error("Copy failed", copyError)
     }
   }
-
-
 
   const formatTime = (ms?: number): string => {
-    if (!ms) return 'N/A'
-    const seconds = Math.round(ms / 1000)
+    if (!ms || ms <= 0) return ""
+    const seconds = Math.max(1, Math.round(ms / 1000))
     return `${seconds}s`
   }
 
-  if (isLoading) {
+  if (isLoading && mistakes.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-8 text-center max-w-md mx-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your mistakes...</p>
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0D12] flex items-center justify-center p-4">
+        <div className="rounded-2xl border border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#1C1C1E] p-8 text-center max-w-md w-full shadow-sm">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-[#4DA3FF] mx-auto mb-4" />
+          <p className="text-sm text-slate-600 dark:text-[#AEAEB2]">Loading your mistakes...</p>
         </div>
       </div>
     )
   }
 
-  if (error) {
+  if (error && mistakes.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-8 text-center max-w-md mx-4">
-          <AlertTriangle className="h-8 w-8 text-red-600 mx-auto mb-4" />
-          <p className="text-red-600 mb-4">Failed to load mistakes</p>
-          <p className="text-gray-600 text-sm mb-4">{error}</p>
-          <Button onClick={onClose} variant="outline">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0D12] flex items-center justify-center p-4">
+        <div className="rounded-2xl border border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#1C1C1E] p-8 text-center max-w-md w-full shadow-sm">
+          <AlertTriangle className="h-8 w-8 text-red-600 dark:text-[#FF6961] mx-auto mb-3" />
+          <p className="text-red-600 dark:text-[#FF6961] font-medium mb-1">Failed to load mistakes</p>
+          <p className="text-slate-600 dark:text-[#AEAEB2] text-sm mb-4">{error}</p>
+          <Button
+            onClick={onClose}
+            variant="outline"
+            className="border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#262628] text-slate-700 dark:text-[#F2F2F7]"
+          >
             Close
           </Button>
         </div>
@@ -288,14 +292,18 @@ export function MistakeReview({ sessionId, eloType, failedAttempts, onClose }: M
 
   if (mistakes.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-8 text-center max-w-md mx-4">
-          <Target className="h-8 w-8 text-green-600 mx-auto mb-4" />
-          <p className="text-gray-900 font-medium mb-2">No mistakes to review!</p>
-          <p className="text-gray-600 text-sm mb-4">
-            You didn't make any mistakes in this sprint.
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0D12] flex items-center justify-center p-4">
+        <div className="rounded-2xl border border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#1C1C1E] p-8 text-center max-w-md w-full shadow-sm">
+          <Target className="h-8 w-8 text-emerald-600 dark:text-[#4CD964] mx-auto mb-3" />
+          <p className="text-slate-900 dark:text-[#F2F2F7] font-medium mb-1">No mistakes to review!</p>
+          <p className="text-slate-600 dark:text-[#AEAEB2] text-sm mb-4">
+            You did not make any mistakes in this sprint.
           </p>
-          <Button onClick={onClose} variant="outline">
+          <Button
+            onClick={onClose}
+            variant="outline"
+            className="border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#262628] text-slate-700 dark:text-[#F2F2F7]"
+          >
             Close
           </Button>
         </div>
@@ -303,517 +311,363 @@ export function MistakeReview({ sessionId, eloType, failedAttempts, onClose }: M
     )
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 sm:py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="flex items-center gap-2 text-lg sm:text-xl font-bold text-gray-900">
-                <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
-                Review Mistakes
-              </h1>
-              <p className="text-sm sm:text-base text-gray-600 mt-1">
-                Puzzle {currentIndex + 1} of {mistakes.length}
-              </p>
-            </div>
-            <Button onClick={onClose} variant="outline" size="sm">
-              <X className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Close</span>
-              <span className="sm:hidden">Exit</span>
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:flex-row max-w-7xl mx-auto w-full">
-        {/* Mode controls moved to the right info panel to match design */}
-        <div className="hidden" />
-        {/* Chess Board Section */}
-        <div className="flex-1 flex flex-col min-h-0 lg:min-w-0">
-          <div className="flex-1 p-4 sm:p-6 flex flex-col justify-center bg-white" style={{ paddingTop: '2rem' }}>
-            {currentMistake && (
-              <div className="w-full h-full max-w-2xl max-h-full flex flex-col justify-center mx-auto">
-
-                {/* Turn Indicator (shown in both retry and explore modes, positioned above chess board like SprintSession) */}
-                {(
-                  <div className="flex-shrink-0 mb-2 sm:mb-4">
-                    <div className="flex items-center justify-center py-2 sm:py-3 px-3 sm:px-4 bg-white rounded-lg shadow-sm border mx-2 sm:mx-4">
-                      <div className="flex items-center space-x-2 sm:space-x-3">
-                        {(() => { const isWhite = currentMistake.fen.split(' ')[1] === 'w'; return (
-                          <div className={`p-1.5 sm:p-2 rounded-full ${isWhite ? 'bg-gray-100' : 'bg-gray-800'}`}>
-                            <Crown className={`h-4 w-4 sm:h-5 sm:w-5 ${isWhite ? 'text-gray-700' : 'text-white'}`} />
-                          </div>
-                        ); })()}
-                        <div className="text-center">
-                          <div className="font-semibold text-gray-900 text-sm sm:text-base">Your turn</div>
-                          <div className="text-xs sm:text-sm text-gray-600">
-                            {(() => { const isWhite = currentMistake.fen.split(' ')[1] === 'w'; return `Find the best move for ${isWhite ? 'white' : 'black'}.`; })()}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Chess Board */}
-                <div className="flex-1 flex justify-center">
-                {analysisMode === 'analyze' ? (
-                  <ChessBoard
-                    ref={analysisBoardRef}
-                    key={`analysis-${currentMistake.puzzle_id}`}
-                    fen={analysisFen || currentMistake.fen}
-                    orientation={currentOrientation}
-                    onPositionChange={handlePositionChange}
-                    onMoveAnalysis={handleMakeMove}
-                    mode="analysis"
-                    disabled={false}
-                    analysisLines={(() => {
-                      // For Arrow Duel in explore mode, show colored arrows only at initial position
-                      const atInitialPos = isAtInitialPosition(analysisFen, currentMistake.fen)
-                      console.log('Arrow Duel Debug:', {
-                        isArrowDuelSession,
-                        atInitialPos,
-                        analysisFen: analysisFen || 'empty',
-                        initialFen: currentMistake.fen,
-                        candidateMoves: currentMistake.candidate_moves
-                      })
-
-                      if (isArrowDuelSession && atInitialPos) {
-                        const arrows = []
-                        if (currentMistake.candidate_moves && currentMistake.candidate_moves.length >= 2) {
-                          // Add blue arrow for best move (multipv: 1 = best move = blue)
-                          if (currentMistake.best_move) {
-                            arrows.push({
-                              moves: [currentMistake.best_move],
-                              evaluation: 100,
-                              depth: 15,
-                              pv: currentMistake.best_move,
-                              multipv: 1,
-                              uciMoves: [currentMistake.best_move]
-                            })
-                          }
-                          // Add red arrow for blunder move (multipv: 99 = blunder = red)
-                          if (currentMistake.blunder_move || currentMistake.solution_moves?.[0]) {
-                            const blunderMove = currentMistake.blunder_move || currentMistake.solution_moves[0]
-                            arrows.push({
-                              moves: [blunderMove],
-                              evaluation: -200,
-                              depth: 15,
-                              pv: blunderMove,
-                              multipv: 99,
-                              uciMoves: [blunderMove]
-                            })
-                          }
-                        }
-                        console.log('Arrow Duel Arrows Created:', arrows)
-                        return arrows
-                      }
-                      // Regular analysis arrows only at original position
-                      return blunderArrow && isAtInitialPosition(analysisFen, currentMistake.fen)
-                        ? [blunderArrow, ...analysisLines]
-                        : analysisLines
-                    })()}
-                    showAnalysisArrows={true}
-                  />
-                ) : isArrowDuelSession ? (
-                  // Arrow Duel mode with candidate moves
-                  currentMistake.candidate_moves && currentMistake.candidate_moves.length >= 2 ? (
-                    blunderFollowupActive ? (
-                      <ChessBoard
-                        ref={chessBoardRef}
-                        key={`arrowduel-followup-${currentMistake.puzzle_id}`}
-                        fen={blunderFollowupFen || currentMistake.fen}
-                        solutionMoves={blunderFollowupMoves}
-                        onPuzzleComplete={handlePuzzleComplete}
-                        disabled={false}
-                        undoWrongMoves={true}
-                        mode="puzzle"
-                        orientation={currentOrientation}
-                        disableMoveHighlighting={true}
-                        showExpectedMoveArrow={true}
-                      />
-                    ) : (
-                      <ChessBoard
-                        ref={chessBoardRef}
-                        key={`arrowduel-${currentMistake.puzzle_id}`}
-                        fen={currentMistake.fen}
-                        orientation={currentOrientation}
-                        mode="arrowduel"
-                        disabled={puzzleSolved}
-                        candidateMoves={currentMistake.candidate_moves as [string, string]}
-                        bestMove={currentMistake.best_move || (() => {
-                          // Fallback: determine best move by excluding the puzzle solution (blunder)
-                          if (currentMistake.candidate_moves && currentMistake.solution_moves?.[0]) {
-                            const blunderMove = currentMistake.solution_moves[0]
-                            return currentMistake.candidate_moves.find(move => move !== blunderMove)
-                          }
-                          return currentMistake.candidate_moves?.[1] // Last resort fallback
-                        })()}
-                        blunderMove={currentMistake.blunder_move || currentMistake.solution_moves?.[0]} // Blunder is always the puzzle solution
-                        onPositionChange={handlePositionChange}
-                        onMoveChosen={(chosenMove, isCorrect) => {
-                          // Show immediate green/red feedback on the board
-                          if (chessBoardRef.current) {
-                            chessBoardRef.current.highlightMove(chosenMove, isCorrect)
-                          }
-                          if (isCorrect) {
-                            // Correct choice ends this item
-                            setPuzzleSolved(true)
-                          } else {
-                            // Start guided follow-up from position after blunder
-                            try {
-                              const c = new Chess(currentMistake.fen)
-                              const res = c.move(chosenMove)
-                              const followFen = res ? c.fen() : currentMistake.fen
-                              // After applying the blunder on the board, hand the REMAINING solution moves to the puzzle board
-                              const followMoves = currentMistake.solution_moves?.slice(1) || []
-                              setBlunderFollowupFen(followFen)
-                              setBlunderFollowupMoves(followMoves)
-                              setBlunderFollowupActive(true)
-                              setPuzzleSolved(false)
-                            } catch (e) {
-                              console.error('Failed to start blunder follow-up', e)
-                            }
-                          }
-                        }}
-                      />
-                    )
-                  ) : (
-                    // Fallback when candidate moves are missing
-                    <div className="space-y-4">
-                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <AlertTriangle className="h-4 w-4 text-orange-600" />
-                          <span className="text-sm font-medium text-orange-800">Arrow Duel Data Missing</span>
-                        </div>
-                        <p className="text-xs text-orange-700">
-                          The candidate moves data for this Arrow Duel mistake is not available.
-                          You can still analyze the position where the mistake was made.
-                        </p>
-                      </div>
-                      <ChessBoard
-                        ref={chessBoardRef}
-                        key={`arrowduel-fallback-${currentMistake.puzzle_id}`}
-                        fen={currentMistake.fen}
-                        solutionMoves={currentMistake.solution_moves}
-                        onPuzzleComplete={handlePuzzleComplete}
-                        onMoveAttempt={(move, isCorrect) => {
-                          if (!isCorrect) {
-                            const fromSquare = move.slice(0, 2)
-                            const toSquare = move.slice(2, 4)
-                            handleWrongMove(fromSquare, toSquare)
-                          }
-                        }}
-                        disabled={puzzleSolved}
-                        undoWrongMoves={true}
-                        mode="puzzle"
-                        orientation={currentOrientation}
-                      />
-                    </div>
-                  )
-                ) : (
-                  <ChessBoard
-                    ref={chessBoardRef}
-                    key={`puzzle-${currentMistake.puzzle_id}`}
-                    fen={currentMistake.fen}
-                    solutionMoves={currentMistake.solution_moves}
-                    onPuzzleComplete={handlePuzzleComplete}
-                    onMoveAttempt={(move, isCorrect) => {
-                      if (!isCorrect) {
-                        // Extract from/to squares from the move
-                        const fromSquare = move.slice(0, 2)
-                        const toSquare = move.slice(2, 4)
-                        handleWrongMove(fromSquare, toSquare)
-                      }
-                    }}
-                    disabled={puzzleSolved}
-                    undoWrongMoves={true}
-                    mode="puzzle"
-                    orientation={currentOrientation}
-                  />
-                )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Info Panel */}
-        <div className="w-full lg:w-96 xl:w-[28rem] flex-shrink-0 border-t lg:border-t-0 lg:border-l bg-white lg:bg-gray-50 overflow-y-auto">
-          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-            {/* Puzzle Info */}
-            {currentMistake && (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-2 sm:gap-3 xl:gap-2">
-                  <div className="flex items-center justify-between sm:flex-col sm:items-start xl:flex-row xl:items-center">
-                    <span className="text-xs sm:text-sm font-medium text-gray-700">Rating</span>
-                    <Badge variant="secondary" className="text-xs sm:text-sm">{currentMistake.rating}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between sm:flex-col sm:items-start xl:flex-row xl:items-center">
-                    <span className="text-xs sm:text-sm font-medium text-gray-700">Time Taken</span>
-                    <Badge variant="outline" className="flex items-center gap-1 text-xs sm:text-sm">
-                      <Clock className="h-3 w-3" />
-                      {formatTime(currentMistake.time_taken_ms)}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between sm:flex-col sm:items-start xl:flex-row xl:items-center">
-                    <span className="text-xs sm:text-sm font-medium text-gray-700">Sequence</span>
-                    <Badge variant="outline" className="text-xs sm:text-sm">#{currentMistake.sequence_in_sprint}</Badge>
-                  </div>
+  // Stage 2: Focused Browser Stockfish Analyzer (unified with History & Review)
+  if (viewMode === "analyze" && currentMistake?.fen) {
+    return (
+      <MobileLayout fullHeight>
+        <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#0B0D12]">
+          <Navigation />
+          <MobileContainer padding="lg" className="flex-1 pb-24 lg:pb-8">
+            <div className="max-w-[1020px] mx-auto space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#1C1C1E] px-3 py-2 shadow-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setViewMode("practice")}
+                    className="h-8 px-2.5 border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#262628] text-slate-700 dark:text-[#F2F2F7]"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-1.5" />
+                    {t("common.backToPractice")}
+                  </Button>
+                  <Badge
+                    variant="outline"
+                    className="border-slate-200 dark:border-[#38383A] text-slate-700 dark:text-[#D1D1D6] tabular-nums text-xs"
+                  >
+                    Puzzle {currentIndex + 1} of {mistakes.length}
+                  </Badge>
                 </div>
 
-                {/* Arrow Duel Mode Info */}
-                {isArrowDuelSession && analysisMode === 'retry' && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Target className="h-4 w-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-800">🏹 Arrow Duel Review</span>
-                    </div>
-                    <p className="text-xs text-blue-700">
-                      Choose the better move between the two arrows.
-                    </p>
-
-                  </div>
-                )}
-
-
-                {/* Themes */}
-                {currentMistake.themes.length > 0 && (
-
-                  <div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2">Themes</p>
-                    <div className="flex flex-wrap gap-1">
-                      {currentMistake.themes.map((theme, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {theme}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Lichess + Copy FEN before Explore toggle */}
-                {currentMistake && (
-                  <div className="flex items-center gap-2">
-                    <Button asChild variant="outline" className="flex-1 py-3 text-sm inline-flex items-center justify-center min-w-0">
-                      <a
-                        href={`https://lichess.org/analysis/standard/${(analysisFen || currentMistake.fen).trim().replace(/\s+/g, '_')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label="Analysis in Lichess"
-                        title="Analysis in Lichess"
-                        className="w-full flex items-center justify-center text-center whitespace-nowrap leading-snug overflow-hidden text-ellipsis min-w-0"
+                <div className="flex items-center gap-1.5">
+                  {mistakes.length > 1 && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={currentIndex === 0}
+                        onClick={() => goToIndex(currentIndex - 1)}
+                        className="h-8 px-2 border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#262628] text-slate-700 dark:text-[#F2F2F7]"
+                        aria-label="Previous mistake"
                       >
-                        <ExternalLink className="h-4 w-4 mr-2 flex-shrink-0" />
-                        <span className="truncate">Analysis in Lichess</span>
-                      </a>
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      className="px-3 py-3 inline-flex items-center justify-center flex-shrink-0"
-                      onClick={async () => {
-                        const fen = (analysisFen || currentMistake.fen).trim()
-                        try {
-                          if (navigator.clipboard && navigator.clipboard.writeText) {
-                            await navigator.clipboard.writeText(fen)
-                          } else {
-                            const ta = document.createElement('textarea')
-                            ta.value = fen
-                            document.body.appendChild(ta)
-                            ta.select()
-                            document.execCommand('copy')
-                            document.body.removeChild(ta)
-                          }
-                          setCopied(true)
-                          setTimeout(() => setCopied(false), 1200)
-                        } catch (e) {
-                          console.error('Copy failed', e)
-                        }
-                      }}
-                      aria-label="Copy FEN"
-                      title="Copy FEN"
-                    >
-                      {copied ? (
-                        <CheckIcon className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <CopyIcon className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                )}
-
-                {/* Explore toggle button */}
-                <div className="mt-3">
-                  {analysisMode === 'analyze' ? (
-                    <Button
-                      className="w-full bg-black hover:bg-black/90 text-white py-3 text-sm"
-                      onClick={() => {
-                        setAnalysisMode('retry')
-                        // Clear solved banner when exiting Explore and resetting position
-                        setPuzzleSolved(false)
-                      }}
-                    >
-                      <Eye className="h-5 w-5 mr-2" /> Exit Explore
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      className="w-full py-3 text-sm"
-                      onClick={() => {
-                        setAnalysisMode('analyze')
-                        if (currentMistake) {
-                          if (isArrowDuelSession) {
-                            // Arrow Duel: start at the original position
-                            const initialFen = currentMistake.fen
-                            setAnalysisFen(initialFen)
-                            setPositionHistory([initialFen])
-                            setHistoryIndex(0)
-                          } else {
-                            // Regular puzzle: start with original position (index 0) and after opponent move (index 1)
-                            const originalFen = currentMistake.fen
-                            let afterOpponentFen = originalFen
-                            try {
-                              const chess = new Chess(currentMistake.fen)
-                              if (currentMistake.solution_moves?.length) {
-                                const res = chess.move(currentMistake.solution_moves[0])
-                                if (res) afterOpponentFen = chess.fen()
-                              }
-                            } catch {}
-                            setAnalysisFen(afterOpponentFen)
-                            setPositionHistory([originalFen, afterOpponentFen])
-                            setHistoryIndex(1)
-                          }
-                        }
-                      }}
-                    >
-                      <Eye className="h-5 w-5 mr-2" /> Explore
-                    </Button>
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={currentIndex === mistakes.length - 1}
+                        onClick={() => goToIndex(currentIndex + 1)}
+                        className="h-8 px-2 border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#262628] text-slate-700 dark:text-[#F2F2F7]"
+                        aria-label="Next mistake"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </>
                   )}
-                </div>
-
-                {/* Explore tools card (Back/Reset) */}
-                {analysisMode === 'analyze' && (
-                  <div className="mt-3 bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Eye className="h-4 w-4" />
-                        <span className="font-semibold text-gray-900">Explore</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (historyIndex > 0 && positionHistory.length > 0) {
-                              const prevFen = positionHistory[historyIndex - 1]
-                              analysisBoardRef.current?.setPosition(prevFen)
-                              setAnalysisFen(prevFen)
-                              setHistoryIndex(historyIndex - 1)
-                            }
-                          }}
-                          disabled={historyIndex <= 0}
-                          title="Back one move"
-                        >
-                          <Undo2 className="h-4 w-4 mr-1" /> Back
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (analysisBoardRef.current && currentMistake) {
-                              if (isArrowDuelSession) {
-                                // Arrow Duel: reset to original position
-                                const initialFen = currentMistake.fen
-                                analysisBoardRef.current.setPosition(initialFen)
-                                setAnalysisFen(initialFen)
-                                setPositionHistory([initialFen])
-                                setHistoryIndex(0)
-                              } else {
-                                // Regular puzzle: reset to after opponent move (index 1), but keep original position (index 0) accessible
-                                const originalFen = currentMistake.fen
-                                let afterOpponentFen = originalFen
-                                try {
-                                  const chess = new Chess(currentMistake.fen)
-                                  if (currentMistake.solution_moves?.length) {
-                                    const res = chess.move(currentMistake.solution_moves[0])
-                                    if (res) afterOpponentFen = chess.fen()
-                                  }
-                                } catch {}
-                                analysisBoardRef.current.setPosition(afterOpponentFen)
-                                setAnalysisFen(afterOpponentFen)
-                                setPositionHistory([originalFen, afterOpponentFen])
-                                setHistoryIndex(1)
-                              }
-                            }
-                          }}
-                          title="Reset to initial position"
-                        >
-                          <RotateCcw className="h-4 w-4 mr-1" /> Reset
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <div className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded px-3 py-2">
-                        Click and drag pieces to explore different moves and variations.
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <InteractiveAnalysis
-                        fen={analysisFen || currentMistake.fen}
-                        onMakeMove={handleMakeMove}
-                        onAnalysisUpdate={setAnalysisLines}
-                      />
-                    </div>
-                  </div>
-                )}
-
-              </>
-            )}
-
-            {/* Puzzle Status */}
-            {puzzleSolved && analysisMode === 'retry' && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-800">
-                    {isArrowDuelSession ? 'Correct Choice!' : 'Puzzle Solved!'}
-                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={onClose}
+                    className="h-8 px-2.5 text-slate-600 dark:text-[#AEAEB2] hover:text-slate-900 dark:hover:text-white"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    {t("common.close")}
+                  </Button>
                 </div>
               </div>
-            )}
 
-            {/* Navigation */}
-            <div className="flex gap-2 pt-2 border-t">
+              <PositionAnalyzerPanel
+                key={`analyze-${currentMistake.puzzle_id}-${currentIndex}`}
+                fen={currentMistake.fen}
+                mode={isArrowDuelMistake ? "arrow_duel" : "regular"}
+                solutionMoves={currentMistake.solution_moves}
+                userMoves={currentMistake.user_moves}
+                chosenMove={currentMistake.chosen_move}
+                correctMove={correctMove}
+                themes={currentMistake.themes}
+                rating={currentMistake.rating}
+              />
+            </div>
+          </MobileContainer>
+        </div>
+      </MobileLayout>
+    )
+  }
+
+  // Stage 1: Responsive 2-column landscape on PC/iPad; single-screen compact portrait on mobile
+  return (
+    <MobileLayout fullHeight>
+      <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#0B0D12]">
+        <Navigation />
+        <MobileContainer padding="lg" className="flex-1 pb-24 lg:pb-8">
+          <div className="max-w-[540px] lg:max-w-[1020px] mx-auto flex flex-col gap-2 lg:grid lg:grid-cols-[minmax(440px,620px)_minmax(320px,380px)] lg:grid-rows-[auto_auto_1fr] lg:gap-x-5 lg:gap-y-3 lg:justify-center lg:items-start">
+        {/* Slim Top Bar (Top on mobile; Right rail top on PC/iPad landscape) */}
+        <div className="lg:col-start-2 lg:row-start-1 flex items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#1C1C1E] px-2.5 sm:px-3 py-2 shadow-xs">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              aria-label={t("common.back")}
+              className="text-slate-600 dark:text-[#AEAEB2] hover:text-slate-900 dark:hover:text-white px-1.5 sm:px-2 h-8 shrink-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline lg:hidden ml-1">{t("common.back")}</span>
+            </Button>
+            <div className="flex items-center gap-1.5 lg:flex-col lg:items-start lg:gap-0 min-w-0">
+              <h1 className="text-sm font-semibold text-slate-900 dark:text-[#F2F2F7] truncate">
+                {t("reviewQueue.reviewMistakes")}
+              </h1>
+              <span className="text-[11px] font-medium text-slate-500 dark:text-[#AEAEB2] tabular-nums whitespace-nowrap">
+                Puzzle {currentIndex + 1} of {mistakes.length}
+              </span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            size="sm"
+            disabled={!currentMistake?.fen}
+            onClick={() => setViewMode("analyze")}
+            className="h-8 px-2.5 sm:px-3 bg-blue-600 hover:bg-blue-700 dark:bg-[#0A6FE0] dark:hover:bg-[#1980F5] text-white shrink-0"
+          >
+            <Cpu className="h-3.5 w-3.5 mr-1 sm:mr-1.5" />
+            {t("common.analyze")}
+          </Button>
+        </div>
+
+        {/* Turn / Arrow Duel Indicator */}
+        {currentMistake?.fen && (
+          <div className="lg:col-start-2 lg:row-start-2">
+            {isArrowDuelMistake ? (
+              <ArrowDuelIndicator fen={currentMistake.fen} />
+            ) : (
+              <TurnIndicator fen={currentMistake.fen} />
+            )}
+          </div>
+        )}
+
+        {/* Hero Interactive Chessboard (Left column on PC) */}
+        <div className="lg:col-start-1 lg:row-start-1 lg:row-span-3">
+          {currentMistake?.fen ? (
+            <div className="rounded-2xl border border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#1C1C1E] p-1.5 sm:p-2.5 shadow-sm">
+              <ChessBoard
+                ref={chessBoardRef}
+                key={`${currentMistake.puzzle_id}-${currentIndex}-${resetCount}`}
+                fen={currentMistake.fen}
+                solutionMoves={currentMistake.solution_moves ?? []}
+                disabled={outcome !== null || hasInvalidArrowDuelData}
+                mode={
+                  isArrowDuelMistake && !hasInvalidArrowDuelData
+                    ? "arrowduel"
+                    : "puzzle"
+                }
+                candidateMoves={hasInvalidArrowDuelData ? undefined : candidateMoves}
+                bestMove={hasInvalidArrowDuelData ? undefined : correctMove}
+                blunderMove={
+                  hasInvalidArrowDuelData
+                    ? undefined
+                    : candidateMoves?.find((m) => m.toLowerCase() !== correctMove?.toLowerCase())
+                }
+                onPuzzleComplete={handleRegularComplete}
+                onMoveChosen={handleArrowDuelChosen}
+              />
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#1C1C1E] p-10 text-center text-sm text-slate-500 dark:text-[#AEAEB2]">
+              Loading puzzle position...
+            </div>
+          )}
+        </div>
+
+        {/* Lower Controls, Feedback, Metadata & Navigation (Below board on mobile; Right rail on PC) */}
+        <div className="lg:col-start-2 lg:row-start-3 space-y-2.5">
+          {/* Corrupted Arrow Duel Data Guard */}
+          {hasInvalidArrowDuelData && (
+            <div className="rounded-xl border border-amber-200 dark:border-amber-800/80 bg-amber-50 dark:bg-amber-950/40 p-3 flex items-center justify-between gap-2.5">
+              <div className="flex items-start gap-2 text-sm text-amber-900 dark:text-[#FFB340]">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                <div>
+                  <div className="font-semibold">Arrow Duel candidates unavailable</div>
+                  <div className="text-xs opacity-90">
+                    Open Analyze to inspect this position with Stockfish.
+                  </div>
+                </div>
+              </div>
               <Button
-                onClick={handlePrevious}
-                variant="outline"
-                className="flex-1 text-xs sm:text-sm"
-                disabled={currentIndex === 0}
+                type="button"
                 size="sm"
+                onClick={() => setViewMode("analyze")}
+                className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white"
               >
-                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                <span className="hidden sm:inline">Previous</span>
-                <span className="sm:hidden">Prev</span>
+                <Cpu className="h-3.5 w-3.5 mr-1.5" />
+                {t("common.analyze")}
               </Button>
-              <Button
-                onClick={handleNext}
-                variant="outline"
-                className="flex-1 text-xs sm:text-sm"
-                disabled={currentIndex === mistakes.length - 1}
-                size="sm"
+            </div>
+          )}
+
+          {/* Outcome Banner (Correct / Incorrect) with Retry + Analyze */}
+          {outcome && (
+            <div
+              className={cn(
+                "rounded-xl border px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2",
+                outcome.kind === "correct"
+                  ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-[#4CD964]"
+                  : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-900 dark:text-[#FF6961]",
+              )}
+            >
+              <div className="flex items-center gap-2 text-sm font-medium min-w-0">
+                {outcome.kind === "correct" ? (
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                ) : (
+                  <XCircle className="h-4 w-4 shrink-0" />
+                )}
+                <span className="truncate">
+                  {outcome.kind === "correct"
+                    ? `${t("common.solved")}!`
+                    : outcome.chosenMove && currentMistake?.fen
+                      ? `Tried ${uciMoveToSan(currentMistake.fen, outcome.chosenMove)}, try again`
+                      : "Not quite, try again"}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 ml-auto shrink-0">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={resetPuzzleState}
+                  className="h-8 px-2.5 text-xs bg-white dark:bg-[#1C1C1E] border-slate-200 dark:border-[#38383A] text-slate-700 dark:text-[#F2F2F7]"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                  {t("common.tryAgain")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setViewMode("analyze")}
+                  className="h-8 px-2.5 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Cpu className="h-3.5 w-3.5 mr-1" />
+                  {t("common.analyze")}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Optional Revealed Solution Line */}
+          {showSolution && solutionSan.length > 0 && (
+            <div className="rounded-xl border border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#1C1C1E] px-3.5 py-2.5 text-xs sm:text-sm text-slate-700 dark:text-[#D1D1D6]">
+              <span className="font-semibold text-slate-900 dark:text-[#F2F2F7] mr-2">
+                {t("common.solution")}:
+              </span>
+              <span className="font-mono">{solutionSan.join(" ")}</span>
+            </div>
+          )}
+
+          {/* Slim Metadata + Practice Controls Strip */}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-slate-500 dark:text-[#AEAEB2]">
+            <div className="flex items-center gap-2 min-w-0 tabular-nums">
+              <Badge
+                variant="secondary"
+                className="bg-slate-100 dark:bg-[#2C2C2E] text-slate-700 dark:text-[#D1D1D6] text-[11px] font-medium"
               >
-                <span className="hidden sm:inline">Next</span>
-                <span className="sm:hidden">Next</span>
-                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+                {isArrowDuelMistake ? t("common.arrowDuel") : t("common.regularPuzzle")}
+              </Badge>
+              {currentMistake?.rating ? <span>Elo {currentMistake.rating}</span> : null}
+              {formatTime(currentMistake?.time_taken_ms) ? (
+                <span className="inline-flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {formatTime(currentMistake.time_taken_ms)}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="flex items-center gap-1 ml-auto shrink-0">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={resetPuzzleState}
+                className="h-7 px-2 text-xs text-slate-600 dark:text-[#AEAEB2] hover:text-slate-900 dark:hover:text-white"
+              >
+                <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                {t("common.reset")}
+              </Button>
+              {solutionSan.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSolution((prev) => !prev)}
+                  className="h-7 px-2 text-xs text-slate-600 dark:text-[#AEAEB2] hover:text-slate-900 dark:hover:text-white"
+                >
+                  {showSolution ? (
+                    <>
+                      <EyeOff className="h-3.5 w-3.5 mr-1" />
+                      {t("common.hide")}
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-3.5 w-3.5 mr-1" />
+                      {t("common.solution")}
+                    </>
+                  )}
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleCopyFen}
+                disabled={!currentMistake?.fen}
+                aria-label="Copy FEN"
+                title="Copy FEN"
+                className="h-7 w-7 p-0 text-slate-600 dark:text-[#AEAEB2] hover:text-slate-900 dark:hover:text-white"
+              >
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-[#4CD964]" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
               </Button>
             </div>
           </div>
+
+          {/* Previous / Next Navigation */}
+          {mistakes.length > 1 && (
+            <div className="flex items-center gap-2 pt-0.5">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={currentIndex === 0}
+                onClick={() => goToIndex(currentIndex - 1)}
+                className="flex-1 h-9 border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#1C1C1E] text-slate-700 dark:text-[#F2F2F7]"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                {t("common.previous")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={currentIndex === mistakes.length - 1}
+                onClick={() => goToIndex(currentIndex + 1)}
+                className="flex-1 h-9 border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#1C1C1E] text-slate-700 dark:text-[#F2F2F7]"
+              >
+                {t("common.next")}
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+        </MobileContainer>
+      </div>
+    </MobileLayout>
   )
 }

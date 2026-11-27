@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useStockfish } from '@/hooks/useStockfish'
+import { useI18n } from '@/components/i18n/i18n-provider'
 import {
   formatEvaluation
 } from '@/lib/evaluation-utils'
@@ -51,6 +52,7 @@ export function InteractiveAnalysis({
   canReset = false,
   onAnalysisUpdate
 }: InteractiveAnalysisProps) {
+  const { t } = useI18n()
   const { analysis, analyzePosition, stopAnalysis } = useStockfish()
   const [selectedLineIndex, setSelectedLineIndex] = useState(0)
   const [maxDepth, setMaxDepth] = useState(20)
@@ -78,9 +80,9 @@ export function InteractiveAnalysis({
     }
   }, [analysis.topLines, onAnalysisUpdate])
 
-  // Helper functions - neutral gray color for all evaluations
+  // Helper functions - neutral slate color for all evaluations
   const getEvaluationColorForResolver = (): string => {
-    return 'text-gray-600'
+    return 'text-slate-700 dark:text-[#F2F2F7]'
   }
 
   const getEvaluationIconForResolver = (centipawns: number) => {
@@ -99,13 +101,12 @@ export function InteractiveAnalysis({
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full bg-white dark:bg-[#1C1C1E] border-slate-200 dark:border-[#38383A] shadow-xs">
       <CardHeader className="pb-2 sm:pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-sm sm:text-lg">
-            <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-            <span className="hidden sm:inline">Engine Analysis</span>
-            <span className="sm:hidden">Analysis</span>
+          <CardTitle className="flex items-center gap-2 text-sm sm:text-lg text-slate-900 dark:text-[#F2F2F7]">
+            <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-[#4DA3FF]" />
+            <span>{t('analyzer.engineTitle')}</span>
           </CardTitle>
           <div className="flex items-center gap-1 sm:gap-2">
             {onMoveBack && (
@@ -113,7 +114,7 @@ export function InteractiveAnalysis({
                 onClick={onMoveBack}
                 variant="outline"
                 size="sm"
-                className="text-xs"
+                className="text-xs border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#262628] text-slate-700 dark:text-[#F2F2F7]"
                 disabled={!canMoveBack}
                 title="Move back one move"
               >
@@ -126,7 +127,7 @@ export function InteractiveAnalysis({
                 onClick={onResetToPuzzleStart}
                 variant="outline"
                 size="sm"
-                className="text-xs"
+                className="text-xs border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#262628] text-slate-700 dark:text-[#F2F2F7]"
                 disabled={!canReset}
                 title="Reset to puzzle starting position (after first move)"
               >
@@ -139,17 +140,17 @@ export function InteractiveAnalysis({
       </CardHeader>
 
       <CardContent className="space-y-2 sm:space-y-4">
-        {/* Fixed height container to prevent layout shifts */}
-        <div className="min-h-[280px] space-y-2 sm:space-y-4">
+        {/* Stable height container to prevent layout shifts */}
+        <div className="min-h-[180px] space-y-2 sm:space-y-3">
           {analysis.error ? (
-            <div className="flex items-center gap-2 text-red-600 bg-red-50 p-2 sm:p-3 rounded-lg">
+            <div className="flex items-center gap-2 text-red-700 dark:text-[#FF6961] bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 p-2 sm:p-3 rounded-lg">
               <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="text-xs sm:text-sm">{analysis.error}</span>
             </div>
           ) : analysis.isAnalyzing && analysis.depth === 0 ? (
-            <div className="flex items-center gap-2 text-blue-600 bg-blue-50 p-2 sm:p-3 rounded-lg">
+            <div className="flex items-center gap-2 text-blue-700 dark:text-[#4DA3FF] bg-blue-50 dark:bg-[#0B2A4D]/60 border border-blue-200 dark:border-[#16467A] p-2 sm:p-3 rounded-lg">
               <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-              <span className="text-xs sm:text-sm">Analyzing position...</span>
+              <span className="text-xs sm:text-sm">{t('analyzer.analyzingPosition')}</span>
             </div>
           ) : (
             <>
@@ -162,21 +163,21 @@ export function InteractiveAnalysis({
                       {formatEvaluation(analysis.evaluation, analysis.isMate, analysis.mateIn)}
                     </span>
                   </div>
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs border-slate-200 dark:border-[#38383A] text-slate-600 dark:text-[#AEAEB2]">
                     SF 16 · 7MB NNUE
                   </Badge>
                 </div>
-                <div className="text-xs text-gray-600">
-                  Depth {analysis.depth}{analysis.isAnalyzing ? `/${maxDepth}` : ''} · 1.6 Mn/s
+                <div className="text-xs text-slate-500 dark:text-[#AEAEB2]">
+                  {t('analyzer.depth', { depth: analysis.isAnalyzing ? `${analysis.depth}/${maxDepth}` : analysis.depth })} · 1.6 Mn/s
                   {analysis.isAnalyzing && (
-                    <span className="ml-2 text-blue-600">Analyzing...</span>
+                    <span className="ml-2 text-blue-600 dark:text-[#4DA3FF]">{t('analyzer.analyzing')}</span>
                   )}
                 </div>
               </div>
 
               {/* Top Engine Lines - Compact Single Line Format */}
               {analysis.topLines.length > 0 && (
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   {analysis.topLines.map((line, index) => {
                     // Show first 3-4 moves followed by "..." if there are more
                     const maxMovesToShow = 4
@@ -187,10 +188,10 @@ export function InteractiveAnalysis({
                     return (
                       <div
                         key={index}
-                        className={`p-2 rounded border cursor-pointer transition-colors ${
+                        className={`p-2 rounded-lg border cursor-pointer transition-colors ${
                           selectedLineIndex === index
-                            ? 'bg-blue-50 border-blue-200'
-                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                            ? 'bg-blue-50 dark:bg-[#0B2A4D]/70 border-blue-200 dark:border-[#2463A8]'
+                            : 'bg-slate-50 dark:bg-[#262628] border-slate-200 dark:border-[#38383A] hover:bg-slate-100 dark:hover:bg-[#2C2C2E]'
                         }`}
                         onClick={() => handleLineClick(line, index)}
                       >
@@ -200,7 +201,7 @@ export function InteractiveAnalysis({
                               {formatEvaluation(line.evaluation, line.isMate, line.mateIn)}
                             </span>
                           </div>
-                          <div className="text-xs font-mono text-gray-700 flex-1">
+                          <div className="text-xs font-mono text-slate-700 dark:text-[#D1D1D6] flex-1">
                             {moveText}
                           </div>
                         </div>

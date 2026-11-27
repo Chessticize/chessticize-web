@@ -1,37 +1,69 @@
+"use client"
+
 import Link from "next/link"
 import { Coffee } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/components/i18n/i18n-provider"
 
 interface FooterProps {
   hideOnMobile?: boolean
   className?: string
 }
 
-export default function Footer({ hideOnMobile = true, className }: FooterProps = {}) {
-  return (
-    <footer className={cn(
-      "bg-gray-900 text-gray-300 py-4 mt-auto",
-      hideOnMobile && "hidden lg:block", // Hide on mobile by default, show on desktop
-      className
-    )}>
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex flex-col md:flex-row items-center justify-between space-y-2 md:space-y-0">
+const COPYRIGHT_YEAR = new Date().getFullYear()
 
-          {/* Left side - Copyright */}
-          <div className="text-sm text-gray-400">
-            © 2024 Chessticize
+export default function Footer({ hideOnMobile = true, className }: FooterProps = {}) {
+  const { t } = useI18n()
+
+  return (
+    <footer
+      className={cn(
+        "bg-white dark:bg-[#1C1C1E] border-t border-slate-200 dark:border-[#38383A] text-slate-500 dark:text-[#AEAEB2] py-5 mt-auto",
+        hideOnMobile && "hidden lg:block",
+        className,
+      )}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="text-sm text-slate-500 dark:text-[#AEAEB2]">
+            © {COPYRIGHT_YEAR} {t("common.appName")}
           </div>
 
-          {/* Right side - Buy me a coffee */}
-          <div className="flex items-center">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+            <Link
+              href="/settings#about"
+              className="text-slate-500 dark:text-[#AEAEB2] hover:text-slate-900 dark:hover:text-white transition-colors"
+            >
+              {t("settings.about")}
+            </Link>
+            <Link
+              href="https://github.com/Chessticize/chessticize-web"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-500 dark:text-[#AEAEB2] hover:text-slate-900 dark:hover:text-white transition-colors"
+            >
+              GitHub
+            </Link>
+            <Link
+              href="/privacy"
+              className="text-slate-500 dark:text-[#AEAEB2] hover:text-slate-900 dark:hover:text-white transition-colors"
+            >
+              {t("common.privacyPolicy")}
+            </Link>
+            <Link
+              href="/terms"
+              className="text-slate-500 dark:text-[#AEAEB2] hover:text-slate-900 dark:hover:text-white transition-colors"
+            >
+              {t("common.termsOfService")}
+            </Link>
             <Link
               href="https://coff.ee/tj9bwrx0r6"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center space-x-2 text-sm hover:text-white transition-colors"
+              className="flex items-center gap-1.5 text-slate-500 dark:text-[#AEAEB2] hover:text-slate-900 dark:hover:text-white transition-colors"
             >
               <Coffee className="h-4 w-4" />
-              <span>Buy me a coffee</span>
+              <span>{t("common.buyMeACoffee")}</span>
             </Link>
           </div>
         </div>

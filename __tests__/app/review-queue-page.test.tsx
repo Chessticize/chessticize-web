@@ -2,7 +2,7 @@ import React from "react"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import ReviewQueuePage from "@/app/review-queue/page"
-import { drawReviewQueuePuzzles, excludeReviewQueueItem, getReviewQueueStats, listReviewQueueItems, submitReviewAttempts } from "@/lib/api/library"
+import { drawReviewQueuePuzzles, excludeReviewQueueItem, getAttemptStats, getReviewQueueStats, listReviewQueueItems, submitReviewAttempts } from "@/lib/api/library"
 import { useUserContext } from "@/hooks/useUserContext"
 import { vi } from "vitest"
 
@@ -41,6 +41,7 @@ vi.mock("@/hooks/useUserContext", () => ({
 
 vi.mock("@/lib/api/library", () => ({
   getReviewQueueStats: vi.fn(),
+  getAttemptStats: vi.fn(),
   listReviewQueueItems: vi.fn(),
   drawReviewQueuePuzzles: vi.fn(),
   submitReviewAttempts: vi.fn(),
@@ -49,6 +50,7 @@ vi.mock("@/lib/api/library", () => ({
 
 const mockUseUserContext = vi.mocked(useUserContext)
 const mockGetReviewQueueStats = vi.mocked(getReviewQueueStats)
+const mockGetAttemptStats = vi.mocked(getAttemptStats)
 const mockListReviewQueueItems = vi.mocked(listReviewQueueItems)
 const mockDrawReviewQueuePuzzles = vi.mocked(drawReviewQueuePuzzles)
 const mockSubmitReviewAttempts = vi.mocked(submitReviewAttempts)
@@ -74,6 +76,18 @@ describe("ReviewQueuePage", () => {
       updateChessProfiles: vi.fn(),
     })
     mockGetReviewQueueStats.mockResolvedValue(reviewStats())
+    mockGetAttemptStats.mockResolvedValue({
+      summary: {
+        attempt_count: 4,
+        correct_count: 3,
+        incorrect_count: 1,
+        accuracy: 0.75,
+        timed_attempt_count: 4,
+        average_time_ms: 4200,
+      },
+      buckets: {},
+      series: [],
+    })
     mockListReviewQueueItems.mockResolvedValue(reviewQueueResponse())
     mockDrawReviewQueuePuzzles.mockResolvedValue({ puzzles: [reviewItem({ review_item_id: "drawn-1", puzzle_id: "drawn-puzzle", fen: "drawn-puzzle" })] })
     mockSubmitReviewAttempts.mockResolvedValue({
@@ -88,12 +102,14 @@ describe("ReviewQueuePage", () => {
     mockExcludeReviewQueueItem.mockResolvedValue({ review_item_id: "drawn-1", status: "excluded" })
   })
 
-  it("renders v2 review queue stats and due items", async () => {
+  it("renders v2 review schedule, daily progress, and due items without raw FEN clutter", async () => {
     render(<ReviewQueuePage />)
 
-    expect(await screen.findByRole("heading", { name: "Review Queue", level: 1 })).toBeInTheDocument()
-    expect(screen.getAllByText("Due Now")[0]).toBeInTheDocument()
-    expect(screen.getByText("r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3")).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: "Review", level: 1 })).toBeInTheDocument()
+    expect(screen.getByText("Today's Review Progress")).toBeInTheDocument()
+    expect(screen.getByText("done today")).toBeInTheDocument()
+    expect(screen.getByText("remaining")).toBeInTheDocument()
+    expect(screen.queryByText("r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3")).not.toBeInTheDocument()
     expect(screen.getByText("Showing 1-1 of 1")).toBeInTheDocument()
 
     await waitFor(() => {
@@ -114,7 +130,7 @@ describe("ReviewQueuePage", () => {
     })
   })
 
-  it("draws a review session through the v2 review queue endpoint", async () => {
+  it("draws a focused review session through the v2 review queue endpoint", async () => {
     render(<ReviewQueuePage />)
 
     await screen.findByText("Showing 1-1 of 1")
@@ -129,7 +145,7 @@ describe("ReviewQueuePage", () => {
       })
     })
     expect(await screen.findByText("Review Session")).toBeInTheDocument()
-    expect(screen.getByText("drawn-puzzle")).toBeInTheDocument()
+    expect(screen.getByTestId("chess-board")).toBeInTheDocument()
   })
 
   it("submits regular review attempts through v2", async () => {
@@ -152,7 +168,7 @@ describe("ReviewQueuePage", () => {
         })],
       })
     })
-    expect(await screen.findByText("Status: Scheduled")).toBeInTheDocument()
+    expect(await screen.findByText("Review Complete")).toBeInTheDocument()
   })
 
   it("excludes review queue items through v2", async () => {

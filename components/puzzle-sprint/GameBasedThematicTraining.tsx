@@ -1,14 +1,15 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Target, TrendingDown, Eye, Shield, Crosshair, Swords, Zap } from "lucide-react"
+import { Target, TrendingDown, Eye, Shield, Crosshair, Swords, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
 import { useGameReviewData } from "@/hooks/useGameReviewData"
 import { isThemeExcluded, getThemeDisplayName } from "@/lib/theme-config"
 import { Skeleton } from "@/components/ui/skeleton"
-import { MobileContainer, MobileCard } from "@/components/ui/mobile-layout"
+import { MobileCard } from "@/components/ui/mobile-layout"
+import { useI18n } from "@/components/i18n/i18n-provider"
+import { cn } from "@/lib/utils"
 
 interface ThemeWithCaptureRate {
   tag: string
@@ -20,9 +21,9 @@ interface ThemeWithCaptureRate {
 }
 
 export function GameBasedThematicTraining() {
+  const { locale } = useI18n()
   const { data, isLoading, error } = useGameReviewData()
 
-  // Process missed and caught themes to calculate capture rates
   const getTopMissedThemes = (): ThemeWithCaptureRate[] => {
     if (!data?.opponentMistakesMissed3M?.tag_counts || !data?.opponentMistakesCaught3M?.tag_counts) {
       return []
@@ -31,95 +32,82 @@ export function GameBasedThematicTraining() {
     const missedMap = new Map<string, number>()
     const caughtMap = new Map<string, number>()
 
-    // Process missed themes
     data.opponentMistakesMissed3M.tag_counts.forEach(item => {
       if (!isThemeExcluded(item.tag)) {
         missedMap.set(item.tag, item.count)
       }
     })
 
-    // Process caught themes
     data.opponentMistakesCaught3M.tag_counts.forEach(item => {
       if (!isThemeExcluded(item.tag)) {
         caughtMap.set(item.tag, item.count)
       }
     })
 
-    // Combine data and calculate capture rates
     const allTags = new Set([...missedMap.keys(), ...caughtMap.keys()])
-    
+
     return Array.from(allTags)
       .map(tag => {
         const missed = missedMap.get(tag) || 0
         const caught = caughtMap.get(tag) || 0
         const total = missed + caught
         const captureRate = total > 0 ? (caught / total) * 100 : 0
-        
+
         return {
           tag,
-          displayName: getThemeDisplayName(tag),
+          displayName: getThemeDisplayName(tag, locale),
           missed,
           caught,
           total,
-          captureRate: Math.round(captureRate * 10) / 10
+          captureRate: Math.round(captureRate * 10) / 10,
         }
       })
-      .filter(item => item.missed > 0) // Only themes that were actually missed
-      .sort((a, b) => b.missed - a.missed) // Sort by most missed
-      .slice(0, 6) // Top 6
+      .filter(item => item.missed > 0)
+      .sort((a, b) => b.missed - a.missed)
+      .slice(0, 6)
   }
 
-  // Theme icon mapping
   const getThemeIcon = (tag: string) => {
-    const iconMap: { [key: string]: any } = {
-      'hangingPiece': Target,
-      'pin': Shield,
-      'fork': Crosshair,
-      'discoveredAttack': Eye,
-      'skewer': Swords,
-      'backRankMate': Target,
-      'mateIn1': Target,
-      'mateIn2': Target,
-      'deflection': Eye,
-      'attraction': Target
+    const iconMap: Record<string, typeof Target> = {
+      hangingPiece: Target,
+      pin: Shield,
+      fork: Crosshair,
+      discoveredAttack: Eye,
+      skewer: Swords,
+      backRankMate: Target,
+      mateIn1: Target,
+      mateIn2: Target,
+      deflection: Eye,
+      attraction: Target,
     }
     return iconMap[tag] || Target
-  }
-
-  // Theme color mapping
-  const getThemeColor = (index: number) => {
-    const colors = [
-      { bg: 'from-red-50 to-red-100', border: 'border-red-200', text: 'text-red-800', button: 'bg-red-600 hover:bg-red-700', icon: 'bg-red-500' },
-      { bg: 'from-orange-50 to-orange-100', border: 'border-orange-200', text: 'text-orange-800', button: 'bg-orange-600 hover:bg-orange-700', icon: 'bg-orange-500' },
-      { bg: 'from-yellow-50 to-yellow-100', border: 'border-yellow-200', text: 'text-yellow-800', button: 'bg-yellow-600 hover:bg-yellow-700', icon: 'bg-yellow-500' },
-      { bg: 'from-purple-50 to-purple-100', border: 'border-purple-200', text: 'text-purple-800', button: 'bg-purple-600 hover:bg-purple-700', icon: 'bg-purple-500' },
-      { bg: 'from-blue-50 to-blue-100', border: 'border-blue-200', text: 'text-blue-800', button: 'bg-blue-600 hover:bg-blue-700', icon: 'bg-blue-500' },
-      { bg: 'from-green-50 to-green-100', border: 'border-green-200', text: 'text-green-800', button: 'bg-green-600 hover:bg-green-700', icon: 'bg-green-500' }
-    ]
-    return colors[index % colors.length]
   }
 
   if (isLoading) {
     return (
       <MobileCard padding="lg" className="mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-orange-600 mb-2">Thematic Training</h2>
-            <p className="text-base sm:text-lg text-gray-600">Training your weaknesses from the lichess puzzle library</p>
+            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900 mb-1">
+              Thematic Training
+            </h2>
+            <p className="text-sm text-slate-600">
+              Practice your missed tactical motifs from recent games
+            </p>
           </div>
-          <Skeleton className="h-10 w-32 self-start sm:self-auto" />
+          <Skeleton className="h-8 w-32 self-start sm:self-auto rounded-full" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[...Array(6)].map((_, i) => (
-            <Card key={i} className="border-gray-200">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center space-x-3 sm:space-x-4">
-                  <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl" />
+            <Card key={i} className="border-slate-200 bg-white shadow-none">
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-lg" />
                   <div className="flex-1">
-                    <Skeleton className="h-5 w-20 sm:h-6 sm:w-24 mb-2" />
-                    <Skeleton className="h-3 w-12 sm:h-4 sm:w-16 mb-2" />
-                    <Skeleton className="h-7 w-full sm:h-8" />
+                    <Skeleton className="h-5 w-28 mb-2" />
+                    <Skeleton className="h-4 w-36 mb-3" />
+                    <Skeleton className="h-9 w-full" />
                   </div>
                 </div>
               </CardContent>
@@ -134,13 +122,13 @@ export function GameBasedThematicTraining() {
     return (
       <MobileCard padding="lg" className="mb-6">
         <div className="text-center py-6 sm:py-8">
-          <div className="text-3xl sm:text-4xl mb-4">🎯</div>
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No Game Data Available</h3>
-          <p className="text-sm sm:text-base text-gray-600 mb-4">
+          <Target className="h-8 w-8 text-slate-300 mx-auto mb-3" />
+          <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-1">No Game Data Available</h3>
+          <p className="text-sm text-slate-600 mb-4">
             Add chess profiles in Settings to see your weakness themes
           </p>
           <Link href="/settings">
-            <Button className="bg-orange-600 hover:bg-orange-700 text-white text-sm sm:text-base">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white text-sm">
               Add Chess Profile
             </Button>
           </Link>
@@ -155,10 +143,10 @@ export function GameBasedThematicTraining() {
     return (
       <MobileCard padding="lg" className="mb-6">
         <div className="text-center py-6 sm:py-8">
-          <div className="text-3xl sm:text-4xl mb-4">🎉</div>
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Great Job!</h3>
-          <p className="text-sm sm:text-base text-gray-600">
-            No weakness themes found in your recent games. Keep up the excellent tactical play!
+          <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-3" />
+          <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-1">Great Job!</h3>
+          <p className="text-sm text-slate-600">
+            No weakness themes found in your recent games. Keep up the tactical play.
           </p>
         </div>
       </MobileCard>
@@ -167,51 +155,62 @@ export function GameBasedThematicTraining() {
 
   return (
     <MobileCard padding="lg" className="mb-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-orange-600 mb-2">Thematic Training</h2>
-          <p className="text-base sm:text-lg text-gray-600">Training your weaknesses from the lichess puzzle library</p>
+          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900 mb-1">
+            Thematic Training
+          </h2>
+          <p className="text-sm text-slate-600">
+            Practice your missed tactical motifs from recent games
+          </p>
         </div>
-        <div className="flex items-center space-x-2 bg-orange-100 px-3 py-2 rounded-full self-start sm:self-auto">
-          <Target className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
-          <span className="text-sm sm:text-base font-semibold text-orange-800">{topMissedThemes.length} Themes Available</span>
+        <div className="inline-flex items-center gap-2 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full self-start sm:self-auto">
+          <Target className="h-4 w-4 text-blue-600" />
+          <span className="text-xs sm:text-sm font-medium text-slate-700 tabular-nums">
+            {topMissedThemes.length} Themes Available
+          </span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-        {topMissedThemes.map((theme, index) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {topMissedThemes.map((theme) => {
           const Icon = getThemeIcon(theme.tag)
-          const colors = getThemeColor(index)
 
           return (
             <Card
               key={theme.tag}
-              className={`hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-r ${colors.bg} ${colors.border}`}
+              className="border-slate-200 bg-white shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:border-slate-300"
             >
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center space-x-3 sm:space-x-4">
-                  <div className={`${colors.icon} p-2 sm:p-3 rounded-xl sm:rounded-2xl flex-shrink-0`}>
-                    <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex items-start gap-3.5">
+                  <div className="bg-slate-100 text-slate-700 p-2.5 rounded-lg flex-shrink-0">
+                    <Icon className="h-5 w-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className={`text-lg sm:text-xl font-bold ${colors.text} mb-1`}>{theme.displayName}</h3>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className={`text-xs sm:text-sm ${colors.text} opacity-75`}>
-                        {theme.missed} missed
-                      </span>
-                      <span className="text-gray-400">•</span>
-                      <div className="flex items-center space-x-1">
-                        <TrendingDown className="h-3 w-3 text-red-600" />
-                        <span className={`text-xs sm:text-sm font-semibold ${
-                          theme.captureRate >= 70 ? 'text-green-700' :
-                          theme.captureRate >= 50 ? 'text-yellow-700' : 'text-red-700'
-                        }`}>
+                    <h3 className="text-base font-semibold text-slate-900 truncate mb-1">
+                      {theme.displayName}
+                    </h3>
+                    <div className="flex items-center gap-2 mb-3 text-xs sm:text-sm tabular-nums">
+                      <span className="text-slate-500">{theme.missed} missed</span>
+                      <span className="text-slate-300">·</span>
+                      <div className="flex items-center gap-1">
+                        <TrendingDown className="h-3.5 w-3.5 text-slate-400" />
+                        <span
+                          className={cn(
+                            "font-medium",
+                            theme.captureRate >= 70
+                              ? 'text-emerald-700'
+                              : theme.captureRate >= 50
+                                ? 'text-amber-700'
+                                : 'text-rose-700'
+                          )}
+                        >
                           {theme.captureRate.toFixed(1)}% success
                         </span>
                       </div>
                     </div>
                     <Link href={`/puzzle-sprint/theme/${theme.tag}`}>
-                      <Button className={`w-full ${colors.button} text-white text-xs sm:text-sm py-2`}>
+                      <Button variant="outline" className="w-full border-slate-200 text-slate-800 hover:bg-slate-50 text-xs sm:text-sm">
                         Train {theme.displayName}
                       </Button>
                     </Link>

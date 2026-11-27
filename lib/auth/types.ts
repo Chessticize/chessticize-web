@@ -2,6 +2,8 @@
  * TypeScript types for authentication
  */
 
+import type { UserPreferences } from '@/lib/api/preferences'
+
 // Login request types
 export interface LoginWithCredentials {
   email: string
@@ -57,6 +59,7 @@ export interface User {
   last_sign_in_at: string
   elos?: UserElo[]
   chess_profiles?: ChessProfile[]
+  preferences?: UserPreferences
 }
 
 

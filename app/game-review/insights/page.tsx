@@ -18,8 +18,10 @@ import { CombinedPuzzleLengthChart } from "@/components/game-review/charts/Combi
 import { MoveLengthTrendChart } from "@/components/game-review/charts/MoveLengthTrendChart"
 import { LoadingSkeletons } from "@/components/game-review/common/LoadingSkeletons"
 import Link from "next/link"
+import { useI18n } from "@/components/i18n/i18n-provider"
 
 export default function GameReviewInsightsPage() {
+  const { t } = useI18n()
   // Global user context
   const { user, isLoading: isLoadingUser } = useUserContext()
 
@@ -47,59 +49,65 @@ export default function GameReviewInsightsPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-slate-50">
       <Navigation />
 
-      <main className="max-w-7xl mx-auto px-8 py-12">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 pb-24 lg:pb-12">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-4">
-              <Link href="/game-review">
-                <Button variant="outline" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Overview
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-4xl font-bold text-blue-600 mb-2">Detailed Insights</h1>
-                <p className="text-xl text-gray-600">Deep dive into your tactical performance patterns</p>
-              </div>
+        <div className="mb-6 sm:mb-8">
+          <Link href="/game-review" className="inline-block mb-4">
+            <Button variant="outline" size="sm" className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {t('gameReview.backToOverview')}
+            </Button>
+          </Link>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">
+                {t('gameReview.detailedInsights')}
+              </h1>
+              <p className="text-sm sm:text-base text-slate-500 mt-1">{t('gameReview.insightsSubtitle')}</p>
             </div>
-            <div className="flex items-center space-x-2 bg-blue-100 px-4 py-2 rounded-full">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
-              <span className="text-lg font-semibold text-blue-800">
-                {isLoadingStats ? 'Loading...' : hasData ? 'Analysis Ready' : getImportAnalysisStatus(importSummaryStatus)}
+            <div
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border self-start lg:self-auto shrink-0 text-sm font-medium ${
+                hasData
+                  ? "bg-blue-50 border-blue-200 text-blue-700"
+                  : "bg-white border-slate-200 text-slate-600 shadow-xs"
+              }`}
+            >
+              <BarChart3 className={`h-4 w-4 ${hasData ? "text-blue-600" : "text-slate-400"}`} />
+              <span>
+                {isLoadingStats ? t('common.loading') : hasData ? t('gameReview.analysisReady') : getImportAnalysisStatus(importSummaryStatus, t)}
               </span>
             </div>
           </div>
 
           {/* Quick Summary */}
           {gameReviewData?.summary && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-orange-50 rounded-lg">
-                <div className="text-2xl font-bold text-orange-900">
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+              <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-xl">
+                <div className="text-2xl font-semibold tabular-nums text-slate-900">
                   {gameReviewData.summary.recognitionRate.toFixed(1)}%
                 </div>
-                <div className="text-sm text-orange-700">Recognition Rate</div>
+                <div className="text-xs sm:text-sm text-slate-500 mt-0.5">{t('gameReview.recognitionRate')}</div>
               </div>
-              <div className="text-center p-4 bg-red-50 rounded-lg">
-                <div className="text-2xl font-bold text-red-900">
+              <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-xl">
+                <div className="text-2xl font-semibold tabular-nums text-slate-900">
                   {gameReviewData.summary.mistakesPerGame.toFixed(1)}
                 </div>
-                <div className="text-sm text-red-700">Mistakes Per Game</div>
+                <div className="text-xs sm:text-sm text-slate-500 mt-0.5">{t('gameReview.mistakesPerGame')}</div>
               </div>
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-900">
+              <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-xl">
+                <div className="text-2xl font-semibold tabular-nums text-slate-900">
                   {gameReviewData.summary.totalGamesAnalyzed}
                 </div>
-                <div className="text-sm text-blue-700">Games Analyzed</div>
+                <div className="text-xs sm:text-sm text-slate-500 mt-0.5">{t('gameReview.gamesAnalyzed')}</div>
               </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-900">
+              <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-xl">
+                <div className="text-2xl font-semibold tabular-nums text-slate-900">
                   {gameReviewData.summary.weeklyTrend > 0 ? '+' : ''}{gameReviewData.summary.weeklyTrend.toFixed(1)}%
                 </div>
-                <div className="text-sm text-green-700">Weekly Trend</div>
+                <div className="text-xs sm:text-sm text-slate-500 mt-0.5">{t('gameReview.weeklyTrend')}</div>
               </div>
             </div>
           )}
@@ -107,55 +115,55 @@ export default function GameReviewInsightsPage() {
 
         {/* No Chess Profiles */}
         {!isLoadingUser && !hasProfiles && (
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-            <Target className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Chess Profiles Found</h3>
-            <p className="text-gray-600 mb-6">
-              Add your chess.com or lichess.org profile to start analyzing your games.
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
+            <Target className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">{t('gameReview.noProfilesConnected')}</h3>
+            <p className="text-sm text-slate-600 mb-6">
+              {t('gameReview.connectProfilesDesc')}
             </p>
             <Link href="/settings">
               <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                Add Chess Profile
+                {t('settings.addChessProfile')}
               </Button>
             </Link>
           </div>
         )}
 
         {!isLoadingUser && hasProfiles && !isLoadingStats && !statsError && !hasImportedGames && (
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-            <Calendar className="h-16 w-16 text-amber-500 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">{getImportStatusTitle(importSummaryStatus)}</h3>
-            <p className="text-gray-600 mb-6">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
+            <Calendar className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">{getImportStatusTitle(importSummaryStatus, t)}</h3>
+            <p className="text-sm text-slate-600 mb-6">
               {getImportStatusDescription(importSummaryStatus)}
             </p>
             <Button
               onClick={() => void refreshImport()}
               disabled={isRefreshingImport || importSummaryStatus === 'queued' || importSummaryStatus === 'running'}
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {isRefreshingImport ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <RefreshCw className="h-4 w-4 mr-2" />
               )}
-              {getImportActionLabel(importSummaryStatus, isRefreshingImport)}
+              {getImportActionLabel(importSummaryStatus, isRefreshingImport, t)}
             </Button>
           </div>
         )}
 
         {!isLoadingUser && hasProfiles && !isLoadingStats && !statsError && hasImportedGames && !hasData && (
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-            <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Analysis Yet</h3>
-            <p className="text-gray-600">
-              Imported games were found, but tactical analysis is not available for this profile yet.
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
+            <BarChart3 className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">{t('gameReview.noAnalysisYet')}</h3>
+            <p className="text-sm text-slate-600">
+              {t('gameReview.noAnalysisDesc')}
             </p>
           </div>
         )}
 
         {/* Loading State */}
         {isLoadingStats && hasProfiles && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             <LoadingSkeletons />
             <LoadingSkeletons />
           </div>
@@ -163,15 +171,15 @@ export default function GameReviewInsightsPage() {
 
         {/* Error State */}
         {statsError && !isLoadingStats && hasProfiles && (
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
             <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-red-900 mb-2">Analysis Error</h3>
+              <h3 className="text-lg font-semibold text-red-900 mb-2">{t('gameReview.analysisError')}</h3>
               <p className="text-red-700 text-sm mb-4">{statsError}</p>
               <Button
                 onClick={refetch}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
-                Try Again
+                {t('common.tryAgain')}
               </Button>
             </div>
           </div>
@@ -179,15 +187,15 @@ export default function GameReviewInsightsPage() {
 
         {/* Charts Grid */}
         {!isLoadingStats && hasProfiles && !statsError && hasData && gameReviewData && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Performance Trends Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Weekly Recognition Trend */}
-              <Card className="bg-white shadow-lg">
+              <Card className="bg-white border-slate-200 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <TrendingUp className="h-5 w-5 text-blue-600" />
-                    <span>Weekly Recognition Trend</span>
+                  <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+                    <TrendingUp className="h-4 w-4 text-blue-600" />
+                    <span>{t('gameReview.weeklyRecognitionTrend')}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -196,11 +204,11 @@ export default function GameReviewInsightsPage() {
               </Card>
 
               {/* My Mistakes Trend */}
-              <Card className="bg-white shadow-lg">
+              <Card className="bg-white border-slate-200 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <TrendingUp className="h-5 w-5 text-red-600" />
-                    <span>My Mistakes Per Game Trend</span>
+                  <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+                    <TrendingUp className="h-4 w-4 text-slate-500" />
+                    <span>{t('gameReview.myMistakesTrend')}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -210,11 +218,11 @@ export default function GameReviewInsightsPage() {
             </div>
 
             {/* My Mistakes Analysis */}
-            <Card className="bg-white shadow-lg">
+            <Card className="bg-white border-slate-200 shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Calendar className="h-5 w-5 text-red-600" />
-                  <span>My Mistakes by Theme</span>
+                <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+                  <Calendar className="h-4 w-4 text-slate-500" />
+                  <span>{t('gameReview.myMistakesByTheme')}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -226,12 +234,12 @@ export default function GameReviewInsightsPage() {
             </Card>
 
             {/* Theme Analysis Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <Card className="bg-white shadow-lg">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-white border-slate-200 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Target className="h-5 w-5 text-orange-600" />
-                    <span>Missed Opportunities by Theme</span>
+                  <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+                    <Target className="h-4 w-4 text-slate-500" />
+                    <span>{t('gameReview.missedByTheme')}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -242,11 +250,11 @@ export default function GameReviewInsightsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white shadow-lg">
+              <Card className="bg-white border-slate-200 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Target className="h-5 w-5 text-green-600" />
-                    <span>Successfully Caught by Theme</span>
+                  <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+                    <Target className="h-4 w-4 text-emerald-600" />
+                    <span>{t('gameReview.caughtByTheme')}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -259,14 +267,14 @@ export default function GameReviewInsightsPage() {
             </div>
 
             {/* Capture Success Rate Analysis */}
-            <Card className="bg-white shadow-lg">
+            <Card className="bg-white border-slate-200 shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Target className="h-5 w-5 text-blue-600" />
-                  <span>Capture Success Rate by Theme</span>
+                <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+                  <Target className="h-4 w-4 text-blue-600" />
+                  <span>{t('gameReview.captureSuccessRateByTheme')}</span>
                 </CardTitle>
-                <p className="text-sm text-gray-600 mt-1">
-                  Shows your success rate for each tactical theme - focus on themes with lower rates
+                <p className="text-sm text-slate-500 mt-1">
+                  {t('gameReview.captureSuccessRateDesc')}
                 </p>
               </CardHeader>
               <CardContent>
@@ -278,14 +286,14 @@ export default function GameReviewInsightsPage() {
             </Card>
 
             {/* Theme Success Rate Trends */}
-            <Card className="bg-white shadow-lg">
+            <Card className="bg-white border-slate-200 shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <TrendingUp className="h-5 w-5 text-green-600" />
-                  <span>Theme Success Rate Trends</span>
+                <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+                  <TrendingUp className="h-4 w-4 text-blue-600" />
+                  <span>{t('gameReview.themeSuccessRateTrends')}</span>
                 </CardTitle>
-                <p className="text-sm text-gray-600 mt-1">
-                  Compare your success rates between recent 3 months vs previous 3 months for top themes
+                <p className="text-sm text-slate-500 mt-1">
+                  {t('gameReview.themeSuccessRateTrendsDesc')}
                 </p>
               </CardHeader>
               <CardContent>
@@ -299,12 +307,12 @@ export default function GameReviewInsightsPage() {
             </Card>
 
             {/* Game Phase and Color Analysis */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <Card className="bg-white shadow-lg">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-white border-slate-200 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <BarChart3 className="h-5 w-5 text-purple-600" />
-                    <span>Performance by Game Phase</span>
+                  <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+                    <BarChart3 className="h-4 w-4 text-slate-500" />
+                    <span>{t('gameReview.performanceByGamePhase')}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -312,11 +320,11 @@ export default function GameReviewInsightsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white shadow-lg">
+              <Card className="bg-white border-slate-200 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <PieChart className="h-5 w-5 text-indigo-600" />
-                    <span>Performance by Color</span>
+                  <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+                    <PieChart className="h-4 w-4 text-slate-500" />
+                    <span>{t('gameReview.performanceByColor')}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -326,11 +334,11 @@ export default function GameReviewInsightsPage() {
             </div>
 
             {/* Move Length Trend Analysis */}
-            <Card className="bg-white shadow-lg">
+            <Card className="bg-white border-slate-200 shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <TrendingUp className="h-5 w-5 text-purple-600" />
-                  <span>Puzzle Complexity Trends</span>
+                <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+                  <TrendingUp className="h-4 w-4 text-slate-500" />
+                  <span>{t('gameReview.puzzleComplexityTrends')}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -339,19 +347,17 @@ export default function GameReviewInsightsPage() {
             </Card>
 
             {/* Combined Puzzle Length Distribution */}
-            <Card className="bg-white shadow-lg">
+            <Card className="bg-white border-slate-200 shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <BarChart3 className="h-5 w-5 text-purple-600" />
-                  <span>Puzzle Length Comparison</span>
+                <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+                  <BarChart3 className="h-4 w-4 text-slate-500" />
+                  <span>{t('gameReview.puzzleLengthComparison')}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <CombinedPuzzleLengthChart data={gameReviewData} />
               </CardContent>
             </Card>
-
-
           </div>
         )}
       </main>
@@ -361,33 +367,39 @@ export default function GameReviewInsightsPage() {
   )
 }
 
-function getImportAnalysisStatus(status?: string): string {
+function getImportAnalysisStatus(
+  status: string | undefined,
+  t: ReturnType<typeof useI18n>["t"],
+): string {
   switch (status) {
     case 'queued':
-      return 'Import Queued'
+      return t('gameReview.importQueued')
     case 'running':
-      return 'Import Running'
+      return t('gameReview.importRunning')
     case 'failed':
-      return 'Import Failed'
+      return t('gameReview.importFailed')
     case 'complete':
-      return 'Import Complete'
+      return t('gameReview.importComplete')
     default:
-      return 'Waiting for Analysis'
+      return t('gameReview.waitingForAnalysis')
   }
 }
 
-function getImportStatusTitle(status?: string): string {
+function getImportStatusTitle(
+  status: string | undefined,
+  t: ReturnType<typeof useI18n>["t"],
+): string {
   switch (status) {
     case 'queued':
-      return 'Game Import Queued'
+      return t('gameReview.importTitleQueued')
     case 'running':
-      return 'Game Import Running'
+      return t('gameReview.importTitleRunning')
     case 'failed':
-      return 'Game Import Failed'
+      return t('gameReview.importTitleFailed')
     case 'complete':
-      return 'No Games Imported'
+      return t('gameReview.importTitleComplete')
     default:
-      return 'Game Import Pending'
+      return t('gameReview.importTitlePending')
   }
 }
 
@@ -406,16 +418,20 @@ function getImportStatusDescription(status?: string): string {
   }
 }
 
-function getImportActionLabel(status?: string, isRefreshingImport = false): string {
-  if (isRefreshingImport) return 'Starting Import...'
+function getImportActionLabel(
+  status: string | undefined,
+  isRefreshingImport: boolean,
+  t: ReturnType<typeof useI18n>["t"],
+): string {
+  if (isRefreshingImport) return t('gameReview.startingImport')
   switch (status) {
     case 'queued':
-      return 'Import Queued'
+      return t('gameReview.importQueued')
     case 'running':
-      return 'Import Running'
+      return t('gameReview.importRunning')
     case 'failed':
-      return 'Retry Import'
+      return t('gameReview.retryImport')
     default:
-      return 'Start Import'
+      return t('gameReview.startImport')
   }
 }

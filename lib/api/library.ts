@@ -208,6 +208,8 @@ export interface V2ReviewQueuePuzzle {
   puzzle_id: string
   mode: "regular" | "arrow_duel"
   due_at: string
+  interval_days?: number
+  review_count?: number
   attempts_since_added: number
   consecutive_correct: number
   fen?: string
@@ -217,6 +219,42 @@ export interface V2ReviewQueuePuzzle {
   candidate_moves?: V2ReviewQueueCandidateMove[]
   correct_move?: string
   metadata?: Record<string, unknown>
+}
+
+export interface AttemptHistoryParams {
+  context?: "sprint" | "review"
+  mode?: "regular" | "arrow_duel"
+  puzzle_source?: "lichess" | "user_game"
+  result?: "correct" | "incorrect"
+  offset?: number
+  limit?: number
+}
+
+export interface V2AttemptHistoryItem {
+  attempt_id: string
+  puzzle_source: "lichess" | "user_game"
+  puzzle_id: string
+  mode: "regular" | "arrow_duel"
+  context: "sprint" | "review"
+  context_id?: string | null
+  was_correct: boolean
+  user_moves?: string[]
+  chosen_move?: string | null
+  time_taken_ms?: number | null
+  attempted_at: string
+  fen?: string
+  solution_moves?: string[]
+  rating?: number
+  themes?: string[]
+  candidate_moves?: V2ReviewQueueCandidateMove[]
+  correct_move?: string
+}
+
+export interface V2AttemptHistoryResponse {
+  attempts: V2AttemptHistoryItem[]
+  total_count: number
+  offset: number
+  limit: number
 }
 
 export interface V2ReviewQueueListResponse {
@@ -373,6 +411,16 @@ export async function excludeReviewQueueItem(reviewItemID: string, reason: strin
   }
 
   return await response.json() as V2ExcludeReviewQueueItemResponse
+}
+
+export async function listMyAttempts(params: AttemptHistoryParams = {}): Promise<V2AttemptHistoryResponse> {
+  const response = await apiGet(buildV2URL("/me/attempts", params))
+
+  if (!response.ok) {
+    throw new ApiError("Failed to load puzzle history", response.status)
+  }
+
+  return await response.json() as V2AttemptHistoryResponse
 }
 
 function buildV2URL(path: string, params: object): string {

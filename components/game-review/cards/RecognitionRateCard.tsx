@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Target, TrendingUp, TrendingDown, Minus } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/components/i18n/i18n-provider"
 
 interface RecognitionRateCardProps {
   currentRate: number
@@ -14,93 +15,98 @@ interface RecognitionRateCardProps {
   className?: string
 }
 
-export function RecognitionRateCard({ 
-  currentRate, 
-  previousRate, 
+export function RecognitionRateCard({
+  currentRate,
   trend = 0,
   isLoading = false,
-  className 
+  className,
 }: RecognitionRateCardProps) {
+  const { t } = useI18n()
+
   if (isLoading) {
     return (
-      <Card className={cn("border-orange-200 bg-orange-50", className)}>
+      <Card className={cn("border-slate-200 bg-white shadow-sm", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center space-x-2 text-orange-800">
-            <Target className="h-5 w-5" />
-            <span>Opponent Mistake Recognition</span>
+          <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+            <Target className="h-4 w-4 text-blue-600" />
+            <span>{t("gameReview.opponentMistakeRecognition")}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <Skeleton className="h-12 w-24" />
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-6 w-24 rounded-full" />
           </div>
         </CardContent>
       </Card>
     )
   }
 
-  // Determine status based on recognition rate
   const getStatus = (rate: number) => {
-    if (rate >= 70) return { color: 'green', label: 'Strong', icon: '🟢' }
-    if (rate >= 50) return { color: 'yellow', label: 'Needs Work', icon: '🟡' }
-    return { color: 'red', label: 'Focus Area', icon: '🔴' }
+    if (rate >= 70) return { color: 'emerald' as const, label: t("gameReview.strong") }
+    if (rate >= 50) return { color: 'amber' as const, label: t("gameReview.needsWork") }
+    return { color: 'rose' as const, label: t("gameReview.focusArea") }
   }
 
-  // Determine trend direction
   const getTrendIcon = () => {
     if (Math.abs(trend) < 1) return <Minus className="h-4 w-4" />
     return trend > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />
   }
 
   const getTrendColor = () => {
-    if (Math.abs(trend) < 1) return 'text-gray-600'
-    return trend > 0 ? 'text-green-600' : 'text-red-600'
+    if (Math.abs(trend) < 1) return 'text-slate-500'
+    return trend > 0 ? 'text-emerald-600' : 'text-rose-600'
   }
 
   const status = getStatus(currentRate)
 
   return (
-    <Card className={cn("border-orange-200 bg-orange-50", className)}>
+    <Card className={cn("border-slate-200 bg-white shadow-sm", className)}>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center space-x-2 text-orange-800">
-          <Target className="h-5 w-5" />
-          <span>Opponent Mistake Recognition</span>
+        <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+          <Target className="h-4 w-4 text-blue-600" />
+          <span>{t("gameReview.opponentMistakeRecognition")}</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {/* Main percentage */}
-          <div className="text-4xl font-bold text-orange-900">
+          <div className="text-4xl font-semibold tracking-tight tabular-nums text-slate-900">
             {currentRate.toFixed(1)}%
           </div>
-          
-          {/* Trend indicator */}
-          <div className={cn("flex items-center space-x-1", getTrendColor())}>
-            {getTrendIcon()}
-            <span className="text-sm font-medium">
-              {Math.abs(trend) < 1 ? 'Stable' : `${trend > 0 ? '+' : ''}${trend.toFixed(1)}%`}
-            </span>
+
+          <div className="flex items-center gap-2 text-sm">
+            <div className={cn("inline-flex items-center gap-1 font-medium tabular-nums", getTrendColor())}>
+              {getTrendIcon()}
+              <span>
+                {Math.abs(trend) < 1 ? t("gameReview.stable") : `${trend > 0 ? '+' : ''}${trend.toFixed(1)}%`}
+              </span>
+            </div>
+            <span className="text-slate-300">·</span>
+            <span className="text-slate-500">{t("gameReview.thisWeek")}</span>
           </div>
-          
-          {/* Time period */}
-          <div className="text-sm text-orange-700">
-            This Week
+
+          <div className="pt-1">
+            <Badge
+              variant="secondary"
+              className={cn(
+                "inline-flex items-center gap-1.5 font-medium shadow-none",
+                status.color === 'emerald' && "bg-emerald-50 text-emerald-700 border border-emerald-200",
+                status.color === 'amber' && "bg-amber-50 text-amber-700 border border-amber-200",
+                status.color === 'rose' && "bg-rose-50 text-rose-700 border border-rose-200"
+              )}
+            >
+              <span
+                className={cn(
+                  "h-1.5 w-1.5 rounded-full",
+                  status.color === 'emerald' && "bg-emerald-500",
+                  status.color === 'amber' && "bg-amber-500",
+                  status.color === 'rose' && "bg-rose-500"
+                )}
+              />
+              {status.label}
+            </Badge>
           </div>
-          
-          {/* Status badge */}
-          <Badge 
-            variant="secondary" 
-            className={cn(
-              "mt-3",
-              status.color === 'green' && "bg-green-100 text-green-800",
-              status.color === 'yellow' && "bg-yellow-100 text-yellow-800", 
-              status.color === 'red' && "bg-red-100 text-red-800"
-            )}
-          >
-            {status.icon} {status.label}
-          </Badge>
         </div>
       </CardContent>
     </Card>

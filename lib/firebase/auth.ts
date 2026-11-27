@@ -10,6 +10,8 @@ import {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   sendPasswordResetEmail,
   updatePassword as firebaseUpdatePassword,
@@ -21,7 +23,11 @@ import {
   ActionCodeSettings,
 } from 'firebase/auth'
 
-import { getFirebaseAuth, isFirebaseAvailable } from './config'
+import {
+  getFirebaseAuth,
+  isFirebaseAvailable,
+  isUsingSameOriginAuthDomain,
+} from './config'
 import {
   FirebaseAuthProvider,
   FirebaseAuthResult,
@@ -46,9 +52,11 @@ debugLog('[Firebase Auth] Google provider custom parameters:', { prompt: 'select
 
 // Email link settings
 
-const emailLinkSettings: ActionCodeSettings = {
-  url: typeof window !== 'undefined' ? `${window.location.origin}/auth/magic-link` : '',
-  handleCodeInApp: true,
+function getEmailLinkSettings(): ActionCodeSettings {
+  return {
+    url: typeof window !== 'undefined' ? `${window.location.origin}/auth/magic-link` : '',
+    handleCodeInApp: true,
+  }
 }
 
 // Local storage keys for email link authentication
@@ -131,16 +139,17 @@ export async function signUpWithEmail(email: string, password: string): Promise<
 export async function sendMagicLink(email: string): Promise<void> {
   ensureFirebaseAvailable()
   const auth = getFirebaseAuth()!
+  const actionCodeSettings = getEmailLinkSettings()
 
   try {
-    await sendSignInLinkToEmail(auth, email, emailLinkSettings)
+    await sendSignInLinkToEmail(auth, email, actionCodeSettings)
 
     // Store email in localStorage for completing sign-in
     if (typeof window !== 'undefined') {
       const emailLinkData: EmailLinkStorage = {
         email,
         timestamp: Date.now(),
-        url: emailLinkSettings.url,
+        url: actionCodeSettings.url,
       }
       localStorage.setItem(EMAIL_LINK_STORAGE_KEY, JSON.stringify(emailLinkData))
     }
@@ -234,15 +243,62 @@ export function getStoredEmailForSignIn(): string | null {
 
 
 /**
- * Sign in with Google using popup with retry logic
+ * Redirect flow avoids iOS popup/WebKit issues, but only works reliably when
+ * Firebase authDomain is served on the same origin (otherwise Safari/iOS WebKit
+ * storage partitioning drops sessionStorage initial state).
+ */
+export function shouldUseRedirectFlow(): boolean {
+  if (typeof window === 'undefined') return false
+  if (!isUsingSameOriginAuthDomain()) return false
+
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : ''
+  const isMobile = /iPhone|iPad|iPod|Android|Mobile/i.test(ua)
+  const isStandalonePwa =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(display-mode: standalone)').matches
+  return isMobile || isStandalonePwa
+}
+
+/**
+ * Sign in with Google using popup
  */
 export async function signInWithGooglePopup(): Promise<FirebaseAuthResult> {
-  // Simplified per Firebase docs: try popup, fall back to redirect for popup-block issues
   ensureFirebaseAvailable()
   const auth = getFirebaseAuth()!
 
   try {
     const credential = await signInWithPopup(auth, googleProvider)
+    return createAuthResult(credential, 'google')
+  } catch (error: any) {
+    throw handleFirebaseError(error, 'google')
+  }
+}
+
+/**
+ * Sign in with Google using full-page redirect (for iOS/mobile with same-origin authDomain)
+ */
+export async function signInWithGoogleRedirect(): Promise<void> {
+  ensureFirebaseAvailable()
+  const auth = getFirebaseAuth()!
+
+  try {
+    await signInWithRedirect(auth, googleProvider)
+  } catch (error: any) {
+    throw handleFirebaseError(error, 'google')
+  }
+}
+
+/**
+ * Complete a pending Google redirect sign-in if returning from OAuth redirect
+ */
+export async function getGoogleRedirectResult(): Promise<FirebaseAuthResult | null> {
+  if (!isFirebaseAvailable()) return null
+  const auth = getFirebaseAuth()
+  if (!auth) return null
+
+  try {
+    const credential = await getRedirectResult(auth)
+    if (!credential) return null
     return createAuthResult(credential, 'google')
   } catch (error: any) {
     throw handleFirebaseError(error, 'google')
@@ -403,5 +459,5 @@ export async function getCurrentUserIdToken(forceRefresh = false): Promise<strin
   }
 }
 
-// Re-export Firebase availability check for convenience
-export { isFirebaseAvailable } from './config'
+// Re-export Firebase availability helpers for convenience
+export { isFirebaseAvailable, isUsingSameOriginAuthDomain } from './config'

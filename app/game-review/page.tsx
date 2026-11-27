@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import Navigation from "@/components/navigation"
 import Footer from "@/components/footer"
 import { MobileLayout, MobileContainer, MobileCard } from "@/components/ui/mobile-layout"
-import { Eye, User, Loader2, Settings, BarChart3, Calendar, RefreshCw } from "lucide-react"
+import { Eye, User, Loader2, Settings, BarChart3, Calendar, RefreshCw, FlaskConical } from "lucide-react"
 import { useUserContext } from "@/hooks/useUserContext"
 import { useGameReviewData } from "@/hooks/useGameReviewData"
 import type { V2ImportJobResponse, V2ProfileImportStatus } from "@/hooks/useGameReviewData"
@@ -13,9 +13,10 @@ import { PerformanceOverviewGrid } from "@/components/game-review/layout/Perform
 import { QuickActionsBar } from "@/components/game-review/layout/QuickActionsBar"
 import { LoadingSkeletons } from "@/components/game-review/common/LoadingSkeletons"
 import Link from "next/link"
-import { DevelopmentNotice } from "@/components/development-notice"
+import { useI18n } from "@/components/i18n/i18n-provider"
 
 export default function GameReviewPage() {
+  const { t } = useI18n()
   // Global user context
   const { user, isLoading: isLoadingUser, error: userError } = useUserContext()
 
@@ -44,130 +45,154 @@ export default function GameReviewPage() {
     (gameReviewData.summary.totalGamesAnalyzed > 0 || gameReviewData.summary.totalPuzzles > 0)
   )
   const analysisStatus = isLoadingStats
-    ? 'Loading...'
+    ? t('common.loading')
     : hasData
-      ? 'Analysis Ready'
+      ? t('gameReview.analysisReady')
       : hasProfiles
-        ? getImportAnalysisStatus(importSummaryStatus)
-        : 'Connect Profiles'
+        ? getImportAnalysisStatus(importSummaryStatus, t)
+        : t('gameReview.connectProfiles')
 
   return (
     <MobileLayout fullHeight>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-slate-50">
         <Navigation />
 
-        <MobileContainer padding="lg">
-          {/* Development Notice */}
-          <DevelopmentNotice className="mb-6" />
-
-          <MobileCard padding="lg" className="mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
-              <div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-orange-600 mb-2">Game Review & Analysis</h1>
-                <p className="text-base sm:text-lg lg:text-xl text-gray-600">Track your tactical recognition and learn from missed opportunities</p>
-              </div>
-              <div className="flex items-center space-x-2 bg-orange-100 px-3 py-2 rounded-full self-start sm:self-auto">
-                <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
-                <span className="text-sm sm:text-base lg:text-lg font-semibold text-orange-800">
-                  {analysisStatus}
-                </span>
-              </div>
+        <MobileContainer padding="lg" className="flex-1">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">
+                {t('gameReview.title')}
+              </h1>
+              <p className="text-sm sm:text-base text-slate-500 mt-1">{t('gameReview.subtitle')}</p>
             </div>
+            <div
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border self-start sm:self-auto text-sm font-medium ${
+                hasData
+                  ? "bg-blue-50 border-blue-200 text-blue-700"
+                  : "bg-white border-slate-200 text-slate-600 shadow-xs"
+              }`}
+            >
+              <Eye className={`h-4 w-4 ${hasData ? "text-blue-600" : "text-slate-400"}`} />
+              <span>{analysisStatus}</span>
+            </div>
+          </div>
 
-            {/* Error Messages */}
-            {userError && (
-              <div className="mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-800 text-sm sm:text-base">User Error: {userError}</p>
-              </div>
-            )}
+          {/* Experimental Notice Banner */}
+          <div
+            role="status"
+            className="mb-6 rounded-xl border border-amber-200 dark:border-amber-800/80 bg-amber-50/85 dark:bg-amber-950/40 px-4 py-3 text-xs sm:text-sm text-amber-950 dark:text-[#FFD699] flex items-start gap-2.5 shadow-2xs"
+          >
+            <FlaskConical className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-[#FFB340]" />
+            <div className="space-y-0.5 leading-relaxed">
+              <div className="font-semibold">{t("gameReview.experimentalTitle")}</div>
+              <p className="text-amber-900/90 dark:text-[#FFE2B3]/90">
+                {t("gameReview.experimentalBody")}{" "}
+                <a
+                  href="https://github.com/Chessticize/chessticize-web/issues/new"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline underline-offset-2 hover:opacity-80"
+                >
+                  GitHub
+                </a>
+                .
+              </p>
+            </div>
+          </div>
 
-            {/* Loading State */}
-            {isLoadingUser && (
-              <div className="flex items-center justify-center py-8 sm:py-12">
-                <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-orange-600" />
-                <span className="ml-2 text-base sm:text-lg text-gray-600">Loading user data...</span>
-              </div>
-            )}
+          {/* Error Messages */}
+          {userError && (
+            <div className="mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 text-sm sm:text-base">User Error: {userError}</p>
+            </div>
+          )}
 
-            {/* Chess Profile Connection Prompt */}
-            {!isLoadingUser && !hasProfiles && (
-              <Card className="hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 mb-6">
-                <CardHeader className="pb-3 sm:pb-4">
-                  <CardTitle className="flex items-center space-x-2 text-blue-800 text-base sm:text-lg">
-                    <User className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                    <span>Connect Chess Profiles</span>
-                  </CardTitle>
-                  <CardDescription className="text-blue-700 text-sm sm:text-base">
-                    Connect your Lichess and Chess.com accounts to start analyzing your games and viewing statistics.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="text-center py-6 sm:py-8">
-                    <User className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-3 sm:mb-4 text-blue-300" />
-                    <h3 className="text-base sm:text-lg font-semibold text-blue-900 mb-2">No Chess Profiles Connected</h3>
-                    <p className="text-blue-700 mb-4 sm:mb-6 text-sm sm:text-base">
-                      To view your game analysis and statistics, you need to connect at least one chess profile.
-                    </p>
-                    <Link href="/settings">
-                      <Button className="bg-blue-600 hover:bg-blue-700 text-sm sm:text-base">
-                        <Settings className="h-4 w-4 mr-2" />
-                        Go to Settings
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+          {/* Loading State */}
+          {isLoadingUser && (
+            <div className="mb-6 flex items-center justify-center py-8 sm:py-12">
+              <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-blue-600" />
+              <span className="ml-2 text-base text-slate-600">{t("common.loading")}</span>
+            </div>
+          )}
 
-            {!isLoadingUser && hasProfiles && !isLoadingStats && !statsError && !hasImportedGames && (
-              <Card className="border-amber-200 bg-amber-50 mb-6">
-                <CardHeader className="pb-3 sm:pb-4">
-                  <CardTitle className="flex items-center space-x-2 text-amber-800 text-base sm:text-lg">
-                    <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
-                    <span>{getImportStatusTitle(importSummaryStatus)}</span>
-                  </CardTitle>
-                  <CardDescription className="text-amber-700 text-sm sm:text-base">
-                    {getImportStatusDescription(importSummaryStatus)}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <Button
-                    onClick={() => void refreshImport()}
-                    disabled={isRefreshingImport || importSummaryStatus === 'queued' || importSummaryStatus === 'running'}
-                    className="bg-amber-600 hover:bg-amber-700 text-white text-sm sm:text-base"
-                  >
-                    {isRefreshingImport ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                    )}
-                    {getImportActionLabel(importSummaryStatus, isRefreshingImport)}
-                  </Button>
-                  {importProgress && (
-                    <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                      <ImportProgressMetric label="Games imported" value={formatImportProgressValue(importProgress.gamesImported)} />
-                      <ImportProgressMetric label="Games analyzed" value={formatImportProgressValue(importProgress.gamesAnalyzed)} />
-                      <ImportProgressMetric label="Puzzles generated" value={formatImportProgressValue(importProgress.puzzlesGenerated)} />
-                    </div>
+          {/* Chess Profile Connection Prompt */}
+          {!isLoadingUser && !hasProfiles && (
+            <Card className="mb-6 bg-white border-slate-200 shadow-sm">
+              <CardHeader className="pb-3 sm:pb-4">
+                <CardTitle className="flex items-center gap-2 text-slate-900 text-base sm:text-lg">
+                  <User className="h-5 w-5 text-blue-600" />
+                  <span>{t("gameReview.connectProfilesTitle")}</span>
+                </CardTitle>
+                <CardDescription className="text-slate-500 text-sm sm:text-base">
+                  {t("gameReview.connectProfilesDesc")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-center py-6 sm:py-8">
+                  <User className="h-12 w-12 sm:h-14 sm:w-14 mx-auto mb-3 sm:mb-4 text-slate-300" />
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-2">{t("gameReview.noProfilesConnected")}</h3>
+                  <p className="text-slate-600 mb-4 sm:mb-6 text-sm sm:text-base">
+                    {t("gameReview.noProfilesHint")}
+                  </p>
+                  <Link href="/settings">
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base">
+                      <Settings className="h-4 w-4 mr-2" />
+                      {t("gameReview.goToSettings")}
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {!isLoadingUser && hasProfiles && !isLoadingStats && !statsError && !hasImportedGames && (
+            <Card className="mb-6 border-slate-200 bg-white shadow-sm">
+              <CardHeader className="pb-3 sm:pb-4">
+                <CardTitle className="flex items-center gap-2 text-slate-900 text-base sm:text-lg">
+                  <Calendar className="h-5 w-5 text-amber-600" />
+                  <span>{getImportStatusTitle(importSummaryStatus, t)}</span>
+                </CardTitle>
+                <CardDescription className="text-slate-500 text-sm sm:text-base">
+                  {getImportStatusDescription(importSummaryStatus)}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <Button
+                  onClick={() => void refreshImport()}
+                  disabled={isRefreshingImport || importSummaryStatus === 'queued' || importSummaryStatus === 'running'}
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base"
+                >
+                  {isRefreshingImport ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
                   )}
-                </CardContent>
-              </Card>
-            )}
+                  {getImportActionLabel(importSummaryStatus, isRefreshingImport, t)}
+                </Button>
+                {importProgress && (
+                  <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <ImportProgressMetric label={t("gameReview.gamesImportedMetric")} value={formatImportProgressValue(importProgress.gamesImported, t)} />
+                    <ImportProgressMetric label={t("gameReview.gamesAnalyzedMetric")} value={formatImportProgressValue(importProgress.gamesAnalyzed, t)} />
+                    <ImportProgressMetric label={t("gameReview.puzzlesGeneratedMetric")} value={formatImportProgressValue(importProgress.puzzlesGenerated, t)} />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-            {!isLoadingUser && hasProfiles && !isLoadingStats && !statsError && hasImportedGames && !hasData && (
-              <Card className="border-slate-200 bg-white mb-6">
-                <CardHeader className="pb-3 sm:pb-4">
-                  <CardTitle className="flex items-center space-x-2 text-slate-800 text-base sm:text-lg">
-                    <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-slate-600" />
-                    <span>No Analysis Yet</span>
-                  </CardTitle>
-                  <CardDescription className="text-slate-600 text-sm sm:text-base">
-                    Imported games were found, but no tactical analysis is available for this profile yet.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            )}
-          </MobileCard>
+          {!isLoadingUser && hasProfiles && !isLoadingStats && !statsError && hasImportedGames && !hasData && (
+            <Card className="mb-6 border-slate-200 bg-white shadow-sm">
+              <CardHeader className="pb-3 sm:pb-4">
+                <CardTitle className="flex items-center gap-2 text-slate-900 text-base sm:text-lg">
+                  <BarChart3 className="h-5 w-5 text-slate-500" />
+                  <span>{t("gameReview.noAnalysisYet")}</span>
+                </CardTitle>
+                <CardDescription className="text-slate-500 text-sm sm:text-base">
+                  {t("gameReview.noAnalysisDesc")}
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          )}
 
           {/* Quick Actions Bar - Moved to top */}
           {!isLoadingStats && hasProfiles && !statsError && hasData && (
@@ -196,13 +221,13 @@ export default function GameReviewPage() {
             <MobileCard padding="lg" className="mb-6">
               <div className="text-center py-8 sm:py-12">
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 sm:p-6">
-                  <h3 className="text-base sm:text-lg font-semibold text-red-900 mb-2">Analysis Error</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-red-900 mb-2">{t("gameReview.analysisError")}</h3>
                   <p className="text-red-700 text-sm sm:text-base mb-4">{statsError}</p>
                   <Button
                     onClick={refetch}
                     className="bg-red-600 hover:bg-red-700 text-white text-sm sm:text-base"
                   >
-                    Try Again
+                    {t("common.tryAgain")}
                   </Button>
                 </div>
               </div>
@@ -219,12 +244,12 @@ export default function GameReviewPage() {
 function ImportProgressMetric({ label, value }: { label: string; value: string }) {
   return (
     <div
-      className="min-h-16 rounded-md border border-amber-200 bg-white/70 px-3 py-2"
+      className="min-h-16 rounded-md border border-slate-200 bg-white px-3 py-2"
       role="group"
       aria-label={`${label}: ${value}`}
     >
-      <div className="text-xs font-medium uppercase text-amber-700">{label}</div>
-      <div className="mt-1 text-lg font-semibold text-amber-950">{value}</div>
+      <div className="text-xs font-medium text-slate-500">{label}</div>
+      <div className="mt-1 text-lg font-semibold tabular-nums text-slate-900">{value}</div>
     </div>
   )
 }
@@ -246,37 +271,46 @@ function getImportProgress(
   }
 }
 
-function formatImportProgressValue(value: number | null | undefined): string {
-  return typeof value === 'number' ? String(value) : 'Pending'
+function formatImportProgressValue(
+  value: number | null | undefined,
+  t: ReturnType<typeof useI18n>["t"],
+): string {
+  return typeof value === 'number' ? String(value) : t("gameReview.pending")
 }
 
-function getImportAnalysisStatus(status?: string): string {
+function getImportAnalysisStatus(
+  status: string | undefined,
+  t: ReturnType<typeof useI18n>["t"],
+): string {
   switch (status) {
     case 'queued':
-      return 'Import Queued'
+      return t("gameReview.importQueued")
     case 'running':
-      return 'Import Running'
+      return t("gameReview.importRunning")
     case 'failed':
-      return 'Import Failed'
+      return t("gameReview.importFailed")
     case 'complete':
-      return 'Import Complete'
+      return t("gameReview.importComplete")
     default:
-      return 'Waiting for Analysis'
+      return t("gameReview.waitingForAnalysis")
   }
 }
 
-function getImportStatusTitle(status?: string): string {
+function getImportStatusTitle(
+  status: string | undefined,
+  t: ReturnType<typeof useI18n>["t"],
+): string {
   switch (status) {
     case 'queued':
-      return 'Game Import Queued'
+      return t("gameReview.importTitleQueued")
     case 'running':
-      return 'Game Import Running'
+      return t("gameReview.importTitleRunning")
     case 'failed':
-      return 'Game Import Failed'
+      return t("gameReview.importTitleFailed")
     case 'complete':
-      return 'No Games Imported'
+      return t("gameReview.importTitleComplete")
     default:
-      return 'Game Import Pending'
+      return t("gameReview.importTitlePending")
   }
 }
 
@@ -295,16 +329,20 @@ function getImportStatusDescription(status?: string): string {
   }
 }
 
-function getImportActionLabel(status?: string, isRefreshingImport = false): string {
-  if (isRefreshingImport) return 'Starting Import...'
+function getImportActionLabel(
+  status: string | undefined,
+  isRefreshingImport: boolean,
+  t: ReturnType<typeof useI18n>["t"],
+): string {
+  if (isRefreshingImport) return t("gameReview.startingImport")
   switch (status) {
     case 'queued':
-      return 'Import Queued'
+      return t("gameReview.importQueued")
     case 'running':
-      return 'Import Running'
+      return t("gameReview.importRunning")
     case 'failed':
-      return 'Retry Import'
+      return t("gameReview.retryImport")
     default:
-      return 'Start Import'
+      return t("gameReview.startImport")
   }
 }

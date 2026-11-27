@@ -2,8 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { BarChart3, Gamepad2 } from "lucide-react"
+import { BarChart3 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/components/i18n/i18n-provider"
 
 interface QuickStatsCardProps {
   totalGames: number
@@ -13,36 +14,32 @@ interface QuickStatsCardProps {
   className?: string
 }
 
-export function QuickStatsCard({ 
+export function QuickStatsCard({
   totalGames,
   totalOpportunities,
   averagePuzzleLength,
   isLoading = false,
-  className 
+  className,
 }: QuickStatsCardProps) {
+  const { t } = useI18n()
+
   if (isLoading) {
     return (
-      <Card className={cn("border-purple-200 bg-purple-50", className)}>
+      <Card className={cn("border-slate-200 bg-white shadow-sm", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center space-x-2 text-purple-800">
-            <BarChart3 className="h-5 w-5" />
-            <span>Quick Stats</span>
+          <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+            <BarChart3 className="h-4 w-4 text-slate-500" />
+            <span>{t("gameReview.quickStats")}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-16" />
-            </div>
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-4 w-16" />
-            </div>
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-16" />
-            </div>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-center justify-between py-1">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-14" />
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -50,47 +47,46 @@ export function QuickStatsCard({
   }
 
   return (
-    <Card className={cn("border-purple-200 bg-purple-50", className)}>
+    <Card className={cn("border-slate-200 bg-white shadow-sm flex flex-col", className)}>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center space-x-2 text-purple-800">
-          <BarChart3 className="h-5 w-5" />
-          <span>Quick Stats</span>
+        <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+          <BarChart3 className="h-4 w-4 text-blue-600" />
+          <span>{t("gameReview.quickStats")}</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {/* Games Analyzed */}
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-purple-700">Games Analyzed</span>
-            <span className="font-semibold text-purple-900">
+      <CardContent className="flex-1 flex flex-col justify-between">
+        <div className="divide-y divide-slate-100">
+          <div className="flex justify-between items-center py-2.5 first:pt-0">
+            <span className="text-sm text-slate-600">{t("gameReview.gamesAnalyzed")}</span>
+            <span className="text-sm font-semibold tabular-nums text-slate-900">
               {totalGames.toLocaleString()}
             </span>
           </div>
-          
-          {/* Total Opportunities */}
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-purple-700">Total Opportunities</span>
-            <span className="font-semibold text-purple-900">
+
+          <div className="flex justify-between items-center py-2.5">
+            <span className="text-sm text-slate-600">{t("gameReview.totalOpportunities")}</span>
+            <span className="text-sm font-semibold tabular-nums text-slate-900">
               {totalOpportunities.toLocaleString()}
             </span>
           </div>
-          
-          {/* Average Puzzle Length */}
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-purple-700">Avg Puzzle Length</span>
-            <span className="font-semibold text-purple-900">
-              {averagePuzzleLength.toFixed(1)} moves
+
+          <div className="flex justify-between items-center py-2.5 last:pb-0">
+            <span className="text-sm text-slate-600">{t("gameReview.avgPuzzleLength")}</span>
+            <span className="text-sm font-semibold tabular-nums text-slate-900">
+              {t("gameReview.movesUnit", { count: averagePuzzleLength.toFixed(1) })}
             </span>
           </div>
-          
-          {/* Activity indicator */}
-          <div className="pt-2 border-t border-purple-200">
-            <div className="flex items-center space-x-2">
-              <Gamepad2 className="h-4 w-4 text-purple-600" />
-              <span className="text-xs text-purple-600">
-                {totalGames > 0 ? 'Active Analysis' : 'No Data Yet'}
-              </span>
-            </div>
+        </div>
+
+        <div className="mt-4 pt-3 border-t border-slate-100">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span
+              className={cn(
+                "h-2 w-2 rounded-full",
+                totalGames > 0 ? "bg-emerald-500" : "bg-slate-300"
+              )}
+            />
+            <span>{totalGames > 0 ? t("gameReview.activeAnalysis") : t("gameReview.noDataYet")}</span>
           </div>
         </div>
       </CardContent>

@@ -167,7 +167,7 @@ test.describe('Production v2 validation', () => {
     expect(requestedURL.searchParams.get('include_stats_bundle')).toBe('true')
 
     await expect(page).not.toHaveURL(/\/auth(?:$|\?)/)
-    await expect(page.getByRole('heading', { name: 'Game Review & Analysis' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Game Analysis' })).toBeVisible()
     await attachScreenshot(page, testInfo, 'prod-game-review-v2')
     await expectNoHorizontalOverflow(page)
 
@@ -193,7 +193,7 @@ test.describe('Production v2 validation', () => {
     expect(listURL.searchParams.get('theme_groups')).toBe('missed_attack')
 
     await expect(page).not.toHaveURL(/\/auth(?:$|\?)/)
-    await expect(page.getByRole('heading', { name: 'Review Queue', level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Review', level: 1 })).toBeVisible()
     await expect(page.getByLabel('Mode')).toHaveValue('arrow_duel')
     await expect(page.getByLabel('Source')).toHaveValue('user_game')
     await expect(page.getByLabel('Due')).toHaveValue('all')
@@ -244,7 +244,7 @@ test.describe('Production v2 validation', () => {
     expect(listURL.searchParams.has('theme_groups')).toBe(false)
 
     await expect(page).not.toHaveURL(/\/auth(?:$|\?)/)
-    await expect(page.getByRole('heading', { name: 'Review Queue', level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Review', level: 1 })).toBeVisible()
     await expect(page.getByLabel('Mode')).toHaveValue('arrow_duel')
     await expect(page.getByLabel('Source')).toHaveValue('lichess')
     await expect(page.getByLabel('Due')).toHaveValue('all')
@@ -270,7 +270,7 @@ test.describe('Production v2 validation', () => {
       throw new Error('Game Review import refresh validation requires at least one connected chess profile.')
     }
 
-    await expect(page.getByRole('heading', { name: 'Game Review & Analysis' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Game Analysis' })).toBeVisible()
     await expect(page.getByRole('button', { name: /Start Import|Retry Import/ })).toBeVisible()
     await attachScreenshot(page, testInfo, 'prod-game-review-import-ready')
 
@@ -437,7 +437,7 @@ async function installAuthCookies(context: BrowserContext) {
   const authToken = process.env.PROD_AUTH_TOKEN
   if (!authToken) return
 
-  const baseURL = process.env.PROD_PLAYWRIGHT_BASE_URL || 'https://www.chessticize.com'
+  const baseURL = process.env.PROD_PLAYWRIGHT_BASE_URL || 'https://app.chessticize.com'
   const domain = new URL(baseURL).hostname
   const tokenExpiry = process.env.PROD_TOKEN_EXPIRY || new Date(Date.now() + 60 * 60 * 1000).toISOString()
 

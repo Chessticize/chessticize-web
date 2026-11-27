@@ -83,17 +83,67 @@ test.describe('Settings v2 API migration', () => {
 
     await page.goto('/settings')
     await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
-    await expect(page.getByText('ELO Settings')).toBeVisible()
+    await expect(page.getByText('ELO Settings')).toHaveCount(0)
+    await expect(page.getByRole('radio', { name: 'Brown' })).toHaveAttribute('aria-checked', 'true')
 
     await testInfo.attach('settings-loaded', {
       body: await page.screenshot({ fullPage: true }),
       contentType: 'image/png',
     })
 
-    const standardInput = page.getByLabel(/Standard Sprint/)
-    await expect(standardInput).toHaveValue('1200')
-    await standardInput.fill('1250')
-    await page.getByRole('button', { name: 'Save ELOs' }).click()
+    // Select a different board theme and confirm local persistence and cloud preference sync
+    const preferencePatches: unknown[] = []
+    await page.route('**/api/v2/me/preferences', async (route) => {
+      if (route.request().method() === 'PATCH') {
+        const body = route.request().postDataJSON()
+        preferencePatches.push(body)
+        await fulfillJSON(route, { preferences: body })
+        return
+      }
+      await fulfillJSON(route, { preferences: {} })
+    })
+
+    await page.getByRole('radio', { name: 'Green' }).click()
+    await expect(page.getByRole('radio', { name: 'Green' })).toHaveAttribute('aria-checked', 'true')
+
+    // Switch to Dark mode, confirm .dark class applies and dark board theme defaults to Graphite,
+    // then customize Dark board theme independently to Deep Blue
+    await page.locator('button[data-theme-mode="dark"]').click()
+    await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains('dark'))).toBe(true)
+    await expect(page.getByRole('radio', { name: 'Graphite' })).toHaveAttribute('aria-checked', 'true')
+    await page.getByRole('radio', { name: 'Deep Blue' }).click()
+    await expect(page.getByRole('radio', { name: 'Deep Blue' })).toHaveAttribute('aria-checked', 'true')
+
+    await page.reload()
+    await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains('dark'))).toBe(true)
+    await expect(page.getByRole('radio', { name: 'Deep Blue' })).toHaveAttribute('aria-checked', 'true')
+
+    // Switch back to Light mode and confirm Light board theme remained Green
+    await page.locator('button[data-theme-mode="light"]').click()
+    await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains('dark'))).toBe(false)
+    await expect(page.getByRole('radio', { name: 'Green' })).toHaveAttribute('aria-checked', 'true')
+    await page.getByRole('radio', { name: 'Brown' }).click()
+    await expect(page.getByRole('radio', { name: 'Brown' })).toHaveAttribute('aria-checked', 'true')
+    expect(preferencePatches.length).toBeGreaterThanOrEqual(3)
+
+    // Edit training ELO directly from Practice Home -> Edit -> Edit Run modal
+    await page.route('**/api/v2/me/stats/sprints**', async (route) => {
+      await fulfillJSON(route, {
+        range: { from: '2025-06-20T00:00:00Z', to: '2026-06-20T00:00:00Z' },
+        group_by: 'day',
+        group_length: 1,
+        summary: { started_count: 1, completed_count: 1, puzzles_solved: 5, sprint_total_duration_seconds: 120 },
+        series: [],
+      })
+    })
+    await page.goto('/puzzle-sprint')
+    await page.getByRole('button', { name: 'Edit' }).click()
+    await page.getByRole('button', { name: 'Edit Standard Sprint' }).click()
+
+    const eloInput = page.getByLabel('Training ELO')
+    await expect(eloInput).toHaveValue('1200')
+    await eloInput.fill('1250')
+    await page.getByRole('button', { name: 'Save Changes' }).click()
 
     await expect.poll(() => eloUpdateBody).toEqual({
       updates: [
@@ -105,7 +155,6 @@ test.describe('Settings v2 API migration', () => {
       ],
     })
     expect(legacyEloRequests).toEqual([])
-    await expect(page.getByRole('button', { name: 'Save ELOs' })).toBeDisabled()
 
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth))

@@ -3,7 +3,7 @@
  * Provides authentication state and methods with Firebase integration
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   getCurrentUser
@@ -15,6 +15,7 @@ import {
   storeFirebaseUser
 } from '@/lib/auth/tokens'
 import { refreshAuthToken } from '@/lib/auth/api-client'
+import { navigateToAuth } from '@/lib/auth/navigation'
 import { APP_CONFIG, debugLog } from '@/lib/config'
 import {
   AuthState
@@ -27,6 +28,10 @@ import {
   sendMagicLink,
   signInWithMagicLink,
   signInWithGooglePopup,
+  signInWithGoogleRedirect,
+  getGoogleRedirectResult,
+  shouldUseRedirectFlow,
+  isUsingSameOriginAuthDomain,
   resetPassword,
   updateUserPassword,
   sendUserEmailVerification,
@@ -130,7 +135,7 @@ export function useAuth() {
         error: null,
       })
 
-      router.push(APP_CONFIG.DEFAULT_LOGOUT_REDIRECT)
+      navigateToAuth(router)
     } catch (error) {
       debugLog('Logout error:', error)
       // Even if Firebase logout fails, clear local state
@@ -143,7 +148,7 @@ export function useAuth() {
         user: null,
         error: null,
       })
-      router.push(APP_CONFIG.DEFAULT_LOGOUT_REDIRECT)
+      navigateToAuth(router)
     }
   }, [router, firebaseUser])
 
@@ -301,6 +306,42 @@ export function useAuth() {
     }
   }, [router])
 
+  const completeGoogleSignIn = useCallback(async (result: { user: any; isNewUser?: boolean }) => {
+    debugLog('[Auth Hook] Google sign-in successful, got result:', {
+      userEmail: result.user.email,
+      userDisplayName: result.user.displayName,
+      isNewUser: result.isNewUser
+    })
+
+    setFirebaseUser(result.user)
+    setAuthProvider('google')
+
+    debugLog('[Auth Hook] Storing Firebase user data in cookies...')
+    storeFirebaseUser(result.user, 'google')
+
+    debugLog('[Auth Hook] Exchanging Firebase token for custom API token...')
+    await exchangeAndStoreTokens(result.user, 'google')
+
+    debugLog('[Auth Hook] Token exchange successful')
+    debugLog('[Auth Hook] Getting current user data from custom API...')
+
+    const user = await getCurrentUser()
+
+    debugLog('[Auth Hook] Got user data:', user ? { email: user.email, id: user.id } : 'null')
+
+    setState({
+      isAuthenticated: true,
+      isLoading: false,
+      user,
+      error: null,
+    })
+
+    debugLog('[Auth Hook] Authentication state updated, redirecting to dashboard...')
+    router.push(APP_CONFIG.DEFAULT_LOGIN_REDIRECT)
+
+    debugLog('[Auth Hook] Google sign-in process completed successfully!')
+  }, [router])
+
   // Sign in with Google
   const signInWithGoogle = useCallback(async () => {
     debugLog('[Auth Hook] Starting Google sign-in process')
@@ -314,54 +355,37 @@ export function useAuth() {
       debugLog('[Auth Hook] Setting loading state to true')
       setState(prev => ({ ...prev, isLoading: true, error: null }))
 
+      if (typeof shouldUseRedirectFlow === 'function' && shouldUseRedirectFlow()) {
+        debugLog('[Auth Hook] Using Firebase Google sign-in (same-origin redirect flow)...')
+        await signInWithGoogleRedirect()
+        return
+      }
+
       debugLog('[Auth Hook] Calling Firebase Google sign-in (popup flow)...')
-      const result = await signInWithGooglePopup()
+      let result
+      try {
+        result = await signInWithGooglePopup()
+      } catch (popupError: any) {
+        if (
+          popupError?.code === 'auth/popup-blocked' &&
+          typeof isUsingSameOriginAuthDomain === 'function' &&
+          isUsingSameOriginAuthDomain() &&
+          typeof signInWithGoogleRedirect === 'function'
+        ) {
+          debugLog('[Auth Hook] Popup blocked with same-origin authDomain, falling back to redirect...')
+          await signInWithGoogleRedirect()
+          return
+        }
+        throw popupError
+      }
 
-
-
-      debugLog('[Auth Hook] Google sign-in successful, got result:', {
-        userEmail: result.user.email,
-        userDisplayName: result.user.displayName,
-        isNewUser: result.isNewUser
-      })
-
-      setFirebaseUser(result.user)
-      setAuthProvider('google')
-
-      debugLog('[Auth Hook] Storing Firebase user data in cookies...')
-      storeFirebaseUser(result.user, 'google')
-
-      debugLog('[Auth Hook] Exchanging Firebase token for custom API token...')
-      await exchangeAndStoreTokens(result.user, 'google')
-
-      debugLog('[Auth Hook] Token exchange successful')
-      debugLog('[Auth Hook] Getting current user data from custom API...')
-
-      // Get user data from custom API
-      const user = await getCurrentUser()
-
-      debugLog('[Auth Hook] Got user data:', user ? { email: user.email, id: user.id } : 'null')
-
-      setState({
-        isAuthenticated: true,
-        isLoading: false,
-        user,
-        error: null,
-      })
-
-      debugLog('[Auth Hook] Authentication state updated, redirecting to dashboard...')
-      // Redirect to dashboard
-      router.push(APP_CONFIG.DEFAULT_LOGIN_REDIRECT)
-
-      debugLog('[Auth Hook] Google sign-in process completed successfully!')
+      await completeGoogleSignIn(result)
     } catch (error: any) {
       debugLog('[Auth Hook] Google sign-in failed in auth hook:', {
         code: error?.code,
         message: error?.message,
         name: error?.name
       })
-
-
 
       // Provide user-friendly error messages
       let userFriendlyMessage = 'Google sign-in failed'
@@ -388,7 +412,7 @@ export function useAuth() {
 
       throw error
     }
-  }, [router])
+  }, [completeGoogleSignIn])
 
   // Send password reset email
   const sendPasswordResetEmail = useCallback(async (email: string) => {
@@ -480,9 +504,48 @@ export function useAuth() {
     return unsubscribe
   }, [firebaseUser])
 
-  // Check auth on mount
+  const completeGoogleSignInRef = useRef(completeGoogleSignIn)
+  completeGoogleSignInRef.current = completeGoogleSignIn
+
+  // Check auth (and complete any pending same-origin Google redirect) on mount
   useEffect(() => {
-    checkAuth()
+    let cancelled = false
+
+    const initAuth = async () => {
+      if (
+        isFirebaseAvailable() &&
+        typeof isUsingSameOriginAuthDomain === 'function' &&
+        isUsingSameOriginAuthDomain() &&
+        typeof getGoogleRedirectResult === 'function'
+      ) {
+        try {
+          const redirectResult = await getGoogleRedirectResult()
+          if (cancelled) return
+          if (redirectResult) {
+            await completeGoogleSignInRef.current(redirectResult)
+            return
+          }
+        } catch (error: any) {
+          if (cancelled) return
+          debugLog('[Auth Hook] Failed to process Google redirect result:', error)
+          setState(prev => ({
+            ...prev,
+            isLoading: false,
+            error: error?.message || 'Google sign-in failed',
+          }))
+          return
+        }
+      }
+
+      if (!cancelled) {
+        await checkAuth()
+      }
+    }
+
+    initAuth()
+    return () => {
+      cancelled = true
+    }
   }, [checkAuth])
 
   // Proactive refresh: jittered schedule around ~60s to avoid synchronized refreshes

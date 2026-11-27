@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -13,9 +13,11 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useAuthContext } from "@/components/auth/auth-provider"
 import { APP_CONFIG } from "@/lib/config"
 import { hasValidAuth } from "@/lib/auth/tokens"
-import { DevelopmentNotice } from "@/components/development-notice"
+import { useI18n } from "@/components/i18n/i18n-provider"
+import { LanguageSwitcher } from "@/components/i18n/language-switcher"
 
 export default function AuthPage() {
+  const { t } = useI18n()
   const [email, setEmail] = useState("")
   const [magicLinkSent, setMagicLinkSent] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(true)
@@ -31,24 +33,37 @@ export default function AuthPage() {
   } = useAuthContext()
   const router = useRouter()
 
+  // Ensure /auth never runs inside a cross-origin-isolated document (COOP: same-origin +
+  // COEP: require-corp leaked via SPA navigation), which blocks Firebase OAuth iframes/popups.
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.crossOriginIsolated) {
+      window.location.replace(window.location.href)
+    }
+  }, [])
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push(APP_CONFIG.DEFAULT_LOGIN_REDIRECT)
+    }
+  }, [isAuthenticated, router])
+
   // Check for tokens immediately
   const hasTokens = hasValidAuth()
 
-  // Redirect if already authenticated
   if (isAuthenticated) {
-    router.push(APP_CONFIG.DEFAULT_LOGIN_REDIRECT)
     return null
   }
 
   // Show loading state if we have tokens (likely authenticated) or if auth is still loading
   if (isLoading || (hasTokens && !isAuthenticated)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-md border-slate-200">
           <CardContent className="p-8">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div>
-              <p className="mt-2 text-gray-600">Checking authentication...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-blue-600 mx-auto" />
+              <p className="mt-3 text-sm text-slate-600">{t("auth.checkingAuth")}</p>
             </div>
           </CardContent>
         </Card>
@@ -101,14 +116,16 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
-        <DevelopmentNotice />
-
-        <Card className="w-full">
+    <div className="min-h-screen flex flex-col bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md mx-auto flex justify-end mb-4">
+        <LanguageSwitcher compact />
+      </div>
+      <div className="flex-1 flex items-center justify-center">
+      <div className="w-full max-w-md space-y-6">
+        <Card className="w-full border-slate-200 shadow-sm bg-white">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold text-orange-600">Chessticize</CardTitle>
-          <CardDescription>Welcome! Sign in or create your account</CardDescription>
+          <CardTitle className="text-2xl font-semibold tracking-tight text-slate-900">{t("common.appName")}</CardTitle>
+          <CardDescription className="text-slate-600">{t("auth.subtitle")}</CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
@@ -128,9 +145,9 @@ export default function AuthPage() {
           )}
 
           {magicLinkSent && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
-              <p className="text-sm text-green-600">
-                Magic link sent to {email}! Check your email and click the link to continue.
+            <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-md">
+              <p className="text-sm text-emerald-700">
+                {t("auth.magicLinkSentBody", { email })}
               </p>
             </div>
           )}
@@ -141,7 +158,7 @@ export default function AuthPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full"
+                className="w-full border-slate-300 bg-white hover:bg-slate-50 text-slate-900"
                 onClick={handleGoogleSignIn}
                 disabled={isLoading || !agreedToTerms}
               >
@@ -151,7 +168,7 @@ export default function AuthPage() {
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                 </svg>
-                Continue with Google
+                {t("auth.continueWithGoogle")}
               </Button>
               {error && /(popup|cancel)/i.test(error) && (
                 <Button
@@ -161,7 +178,7 @@ export default function AuthPage() {
                   onClick={handleGoogleSignIn}
                   disabled={isLoading || !agreedToTerms}
                 >
-                  Having trouble? Try again
+                  {t("common.tryAgain")}
                 </Button>
               )}
             </div>
@@ -170,24 +187,24 @@ export default function AuthPage() {
           {/* Divider before email sign-in */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+              <span className="w-full border-t border-slate-200" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-500">Or sign in with email</span>
+              <span className="bg-white px-2 text-slate-500">{t("auth.orSignInWithEmail")}</span>
             </div>
           </div>
 
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-slate-700">{t("auth.emailLabel")}</Label>
               <Input
                 id="email"
                 type="email"
+                placeholder={t("auth.emailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="mt-1"
+                className="mt-1 border-slate-200"
                 disabled={isLoading}
               />
             </div>
@@ -200,15 +217,15 @@ export default function AuthPage() {
                 onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
                 required
               />
-              <div className="text-sm text-gray-600 leading-5">
+              <div className="text-sm text-slate-600 leading-5">
                 <label htmlFor="terms" className="cursor-pointer">
-                  I agree to the{" "}
-                  <Link href="/terms" className="text-orange-600 hover:text-orange-700 underline">
-                    Terms of Service
+                  {t("auth.agreePrefix")}{" "}
+                  <Link href="/terms" className="text-blue-600 hover:text-blue-700 underline">
+                    {t("common.termsOfService")}
                   </Link>{" "}
-                  and{" "}
-                  <Link href="/privacy" className="text-orange-600 hover:text-orange-700 underline">
-                    Privacy Policy
+                  {t("auth.and")}{" "}
+                  <Link href="/privacy" className="text-blue-600 hover:text-blue-700 underline">
+                    {t("common.privacyPolicy")}
                   </Link>
                 </label>
               </div>
@@ -216,16 +233,15 @@ export default function AuthPage() {
 
             <Button
               type="submit"
-              className="w-full bg-orange-600 hover:bg-orange-700"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               disabled={isLoading || !agreedToTerms}
             >
-              {isLoading ? "Processing..." : "Send Magic Link"}
+              {isLoading ? t("common.loading") : t("auth.sendMagicLink")}
             </Button>
           </form>
-
-
         </CardContent>
       </Card>
+      </div>
       </div>
     </div>
   )

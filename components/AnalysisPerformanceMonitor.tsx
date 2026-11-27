@@ -120,12 +120,12 @@ export function AnalysisPerformanceMonitor() {
             </Badge>
           </div>
 
-          <div className="bg-purple-50 p-3 rounded-lg">
+          <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg">
             <div className="flex items-center gap-2 mb-1">
-              <Activity className="h-4 w-4 text-purple-600" />
-              <span className="text-sm font-medium">Total Time</span>
+              <Activity className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-slate-700">Total Time</span>
             </div>
-            <div className="text-lg font-bold text-purple-700">
+            <div className="text-lg font-bold tabular-nums text-slate-900">
               {formatTime(metrics.totalAnalysisTime)}
             </div>
             <Badge variant={metrics.totalAnalysisTime > 0 ? "default" : "secondary"} className="text-xs">

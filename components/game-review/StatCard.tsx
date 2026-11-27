@@ -27,35 +27,25 @@ export interface StatCardProps {
 
 const colorSchemes = {
   green: {
-    card: 'border-green-200 bg-green-50',
-    title: 'text-green-800',
-    value: 'text-green-900',
-    badge: 'bg-green-100 text-green-800'
+    icon: 'text-emerald-600',
+    badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
   },
   blue: {
-    card: 'border-blue-200 bg-blue-50',
-    title: 'text-blue-800',
-    value: 'text-blue-900',
-    badge: 'bg-blue-100 text-blue-800'
+    icon: 'text-blue-600',
+    badge: 'bg-blue-50 text-blue-700 border border-blue-200',
   },
   purple: {
-    card: 'border-purple-200 bg-purple-50',
-    title: 'text-purple-800',
-    value: 'text-purple-900',
-    badge: 'bg-purple-100 text-purple-800'
+    icon: 'text-slate-600',
+    badge: 'bg-slate-100 text-slate-700 border border-slate-200',
   },
   orange: {
-    card: 'border-orange-200 bg-orange-50',
-    title: 'text-orange-800',
-    value: 'text-orange-900',
-    badge: 'bg-orange-100 text-orange-800'
+    icon: 'text-amber-600',
+    badge: 'bg-amber-50 text-amber-700 border border-amber-200',
   },
   gray: {
-    card: 'border-gray-200 bg-gray-50',
-    title: 'text-gray-800',
-    value: 'text-gray-900',
-    badge: 'bg-gray-100 text-gray-800'
-  }
+    icon: 'text-slate-500',
+    badge: 'bg-slate-100 text-slate-700 border border-slate-200',
+  },
 }
 
 export function StatCard({
@@ -67,16 +57,16 @@ export function StatCard({
   badge,
   colorScheme = 'gray',
   isLoading = false,
-  className
+  className,
 }: StatCardProps) {
   const colors = colorSchemes[colorScheme]
 
   if (isLoading) {
     return (
-      <Card className={cn(colors.card, 'transition-all duration-300', className)}>
+      <Card className={cn('border-slate-200 bg-white shadow-sm', className)}>
         <CardHeader className="pb-3">
-          <CardTitle className={cn('flex items-center space-x-2', colors.title)}>
-            {Icon && <Icon className="h-5 w-5" />}
+          <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+            {Icon && <Icon className={cn('h-4 w-4', colors.icon)} />}
             <Skeleton className="h-5 w-24" />
           </CardTitle>
         </CardHeader>
@@ -91,46 +81,58 @@ export function StatCard({
     )
   }
 
-  const TrendIcon = trend?.direction === 'up' ? TrendingUp : 
-                   trend?.direction === 'down' ? TrendingDown : Minus
+  const TrendIcon =
+    trend?.direction === 'up'
+      ? TrendingUp
+      : trend?.direction === 'down'
+        ? TrendingDown
+        : Minus
 
   return (
-    <Card className={cn(colors.card, 'transition-all duration-300 hover:shadow-md', className)}>
+    <Card className={cn('border-slate-200 bg-white shadow-sm transition-colors hover:border-slate-300', className)}>
       <CardHeader className="pb-3">
-        <CardTitle className={cn('flex items-center space-x-2', colors.title)}>
-          {Icon && <Icon className="h-5 w-5" />}
+        <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+          {Icon && <Icon className={cn('h-4 w-4', colors.icon)} />}
           <span>{title}</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          <div className={cn('text-3xl font-bold', colors.value)}>
+          <div className="text-3xl font-semibold tracking-tight tabular-nums text-slate-900">
             {typeof value === 'number' ? value.toLocaleString() : value}
           </div>
-          
+
           {subtitle && (
-            <p className="text-sm text-gray-600">{subtitle}</p>
+            <p className="text-sm text-slate-500">{subtitle}</p>
           )}
-          
-          <div className="flex items-center justify-between">
+
+          <div className="flex items-center justify-between gap-2">
             {badge && (
-              <Badge 
-                variant={badge.variant || 'secondary'} 
-                className={colors.badge}
+              <Badge
+                variant={badge.variant || 'secondary'}
+                className={cn('font-medium shadow-none', colors.badge)}
               >
                 {badge.text}
               </Badge>
             )}
-            
+
             {trend && (
-              <div className={cn(
-                'flex items-center space-x-1 text-sm',
-                trend.direction === 'up' ? 'text-green-600' :
-                trend.direction === 'down' ? 'text-red-600' : 'text-gray-600'
-              )}>
+              <div
+                className={cn(
+                  'flex items-center gap-1 text-sm tabular-nums',
+                  trend.direction === 'up'
+                    ? 'text-emerald-600'
+                    : trend.direction === 'down'
+                      ? 'text-rose-600'
+                      : 'text-slate-500'
+                )}
+              >
                 <TrendIcon className="h-4 w-4" />
-                <span>{trend.value > 0 ? '+' : ''}{trend.value}%</span>
-                <span className="text-gray-500">{trend.label}</span>
+                <span className="font-medium">
+                  {trend.value > 0 ? '+' : ''}
+                  {trend.value}%
+                </span>
+                <span className="text-slate-500">{trend.label}</span>
               </div>
             )}
           </div>

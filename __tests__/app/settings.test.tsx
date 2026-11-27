@@ -3,7 +3,6 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SettingsPage from '@/app/settings/page'
 import { deleteChessProfile, getChessProfiles } from '@/lib/api/auth'
-import { apiPut } from '@/lib/auth/api-client'
 import { useAuthContext } from '@/components/auth/auth-provider'
 import { useUserContext } from '@/hooks/useUserContext'
 import { vi } from 'vitest'
@@ -62,10 +61,6 @@ vi.mock('@/lib/api/auth', () => ({
   deleteChessProfile: vi.fn(),
 }))
 
-vi.mock('@/lib/auth/api-client', () => ({
-  apiPut: vi.fn(),
-}))
-
 vi.mock('@/hooks/use-toast', () => ({
   toast: mocks.toast,
 }))
@@ -74,7 +69,6 @@ const mockUseAuthContext = vi.mocked(useAuthContext)
 const mockUseUserContext = vi.mocked(useUserContext)
 const mockGetChessProfiles = vi.mocked(getChessProfiles)
 const mockDeleteChessProfile = vi.mocked(deleteChessProfile)
-const mockApiPut = vi.mocked(apiPut)
 
 const baseUser = {
   id: 'user-1',
@@ -242,65 +236,25 @@ describe('SettingsPage profile management', () => {
     expect(mocks.updateChessProfiles).toHaveBeenLastCalledWith([existingProfile, createdProfile])
   })
 
-  it('saves changed ELOs through the v2 ELO endpoint and refreshes user data', async () => {
-    mockApiPut.mockResolvedValue(new Response(JSON.stringify({
-      updated: [
-        {
-          elo_type: 'mixed 5/20',
-          rating: 650,
-          rating_deviation: 50,
-          is_provisional: true,
-          updated_at: '2026-06-20T10:00:00Z',
-        },
-      ],
-    }), { status: 200 }))
-
+  it('does not render ELO Settings in Settings and renders About with open-source, license, and feedback links', () => {
     render(<SettingsPage />)
-
-    const standardInput = screen.getByLabelText(/Standard Sprint/)
-    await userEvent.clear(standardInput)
-    await userEvent.type(standardInput, '650')
-    await userEvent.click(screen.getByRole('button', { name: 'Save ELOs' }))
-
-    await waitFor(() => {
-      expect(mockApiPut).toHaveBeenCalledTimes(1)
-    })
-    expect(new URL(mockApiPut.mock.calls[0][0]).pathname).toBe('/api/v2/me/elos')
-    expect(mockApiPut.mock.calls[0][1]).toEqual({
-      updates: [
-        {
-          elo_type: 'mixed 5/20',
-          rating: 650,
-          rating_deviation: 50.0,
-        },
-      ],
-    })
-    expect(mocks.refreshUser).toHaveBeenCalledTimes(1)
-    expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({
-      title: 'ELOs updated',
-    }))
-  })
-
-  it('shows an error toast when v2 ELO save fails', async () => {
-    mockApiPut.mockResolvedValue(new Response('server rejected update', {
-      status: 500,
-      statusText: 'Internal Server Error',
-    }))
-
-    render(<SettingsPage />)
-
-    const standardInput = screen.getByLabelText(/Standard Sprint/)
-    await userEvent.clear(standardInput)
-    await userEvent.type(standardInput, '650')
-    await userEvent.click(screen.getByRole('button', { name: 'Save ELOs' }))
-
-    await waitFor(() => {
-      expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({
-        title: 'Failed to update ELOs',
-        variant: 'destructive',
-      }))
-    })
-    expect(new URL(mockApiPut.mock.calls[0][0]).pathname).toBe('/api/v2/me/elos')
-    expect(mocks.refreshUser).not.toHaveBeenCalled()
+    expect(screen.queryByText('ELO Settings')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save ELOs' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Source Code/i })).toHaveAttribute(
+      'href',
+      'https://github.com/Chessticize/chessticize-web',
+    )
+    expect(screen.getByRole('link', { name: /GPL-3\.0 License/i })).toHaveAttribute(
+      'href',
+      'https://github.com/Chessticize/chessticize-web/blob/main/LICENSE',
+    )
+    expect(screen.getByRole('link', { name: /Send Feedback/i })).toHaveAttribute(
+      'href',
+      'https://github.com/Chessticize/chessticize-web/issues/new',
+    )
+    expect(screen.getByRole('link', { name: /support@chessticize\.com/i })).toHaveAttribute(
+      'href',
+      'mailto:support@chessticize.com',
+    )
   })
 })

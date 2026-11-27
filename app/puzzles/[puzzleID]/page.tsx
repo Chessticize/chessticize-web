@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { ArrowLeft, Gamepad2, Loader2, Puzzle } from "lucide-react"
+import { ArrowLeft, Gamepad2, Loader2 } from "lucide-react"
 import Navigation from "@/components/navigation"
 import Footer from "@/components/footer"
 import { MobileContainer, MobileLayout } from "@/components/ui/mobile-layout"
@@ -60,24 +60,19 @@ export default function PuzzleDetailPage() {
 
   return (
     <MobileLayout fullHeight>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-slate-50">
         <Navigation />
-        <MobileContainer padding="lg">
-          <div className="mb-6">
-            <Link href="/puzzles">
-              <Button variant="outline" className="mb-4">
+        <MobileContainer padding="lg" className="flex-1">
+          <div className="mb-6 sm:mb-8">
+            <Link href="/puzzles" className="inline-block mb-4">
+              <Button variant="outline" size="sm" className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Puzzles
               </Button>
             </Link>
-            <div className="flex items-center gap-3">
-              <div className="bg-violet-100 p-3 rounded-lg">
-                <Puzzle className="h-7 w-7 text-violet-700" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Puzzle Detail</h1>
-                <p className="text-gray-600 mt-1">Generated tactical position from the v2 API.</p>
-              </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">Puzzle Detail</h1>
+              <p className="text-sm sm:text-base text-slate-500 mt-1">Generated tactical position from your games.</p>
             </div>
           </div>
 
@@ -158,7 +153,7 @@ function PuzzleDetail({ puzzle }: { puzzle: V2PuzzleListItem }) {
             <DetailItem label="Result" value={formatLabel(puzzle.game.result)} />
             <DetailItem label="Rated" value={puzzle.game.rated ? "Rated" : "Casual"} />
           </dl>
-          <Link href={`/games/${encodeURIComponent(puzzle.game.id)}`} className="mt-6 inline-flex items-center text-sm text-emerald-700 hover:underline">
+          <Link href={`/games/${encodeURIComponent(puzzle.game.id)}`} className="mt-6 inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline">
             View game details
           </Link>
         </CardContent>

@@ -2,11 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Badge } from "@/components/ui/badge"
-import { Target, TrendingDown } from "lucide-react"
+import { Target } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { GameReviewData } from "@/hooks/useGameReviewData"
 import { isThemeExcluded, getThemeDisplayName } from "@/lib/theme-config"
+import { useI18n } from "@/components/i18n/i18n-provider"
 
 interface TopMissedThemesCardProps {
   data: GameReviewData | null
@@ -26,25 +26,27 @@ interface ThemeWithMissRate {
 export function TopMissedThemesCard({
   data,
   isLoading = false,
-  className
+  className,
 }: TopMissedThemesCardProps) {
+  const { t, locale } = useI18n()
+
   if (isLoading) {
     return (
-      <Card className={cn("border-red-200 bg-red-50", className)}>
+      <Card className={cn("border-slate-200 bg-white shadow-sm", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center space-x-2 text-red-800">
-            <Target className="h-5 w-5" />
-            <span>Top Missed Themes</span>
+          <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+            <Target className="h-4 w-4 text-slate-500" />
+            <span>{t("gameReview.topMissedThemes")}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex justify-between items-center">
-                <Skeleton className="h-4 w-24" />
-                <div className="flex items-center space-x-2">
-                  <Skeleton className="h-4 w-8" />
+              <div key={i} className="flex justify-between items-center py-1">
+                <Skeleton className="h-4 w-28" />
+                <div className="flex items-center gap-2">
                   <Skeleton className="h-4 w-12" />
+                  <Skeleton className="h-5 w-14 rounded-full" />
                 </div>
               </div>
             ))}
@@ -54,7 +56,6 @@ export function TopMissedThemesCard({
     )
   }
 
-  // Process missed and caught themes to calculate miss rates
   const processTopMissedThemes = (): ThemeWithMissRate[] => {
     if (!data?.opponentMistakesMissed3M?.tag_counts || !data?.opponentMistakesCaught3M?.tag_counts) {
       return []
@@ -63,21 +64,18 @@ export function TopMissedThemesCard({
     const missedMap = new Map<string, number>()
     const caughtMap = new Map<string, number>()
 
-    // Process missed themes
     data.opponentMistakesMissed3M.tag_counts.forEach(item => {
       if (!isThemeExcluded(item.tag)) {
         missedMap.set(item.tag, item.count)
       }
     })
 
-    // Process caught themes
     data.opponentMistakesCaught3M.tag_counts.forEach(item => {
       if (!isThemeExcluded(item.tag)) {
         caughtMap.set(item.tag, item.count)
       }
     })
 
-    // Combine data and calculate miss rates
     const allTags = new Set([...missedMap.keys(), ...caughtMap.keys()])
 
     return Array.from(allTags)
@@ -89,33 +87,33 @@ export function TopMissedThemesCard({
 
         return {
           theme: tag,
-          displayName: getThemeDisplayName(tag),
+          displayName: getThemeDisplayName(tag, locale),
           missed,
           caught,
           total,
-          missRate: Math.round(missRate * 10) / 10
+          missRate: Math.round(missRate * 10) / 10,
         }
       })
-      .filter(item => item.missed > 0) // Only themes that were actually missed
-      .sort((a, b) => b.missed - a.missed) // Sort by most missed
-      .slice(0, 5) // Top 5
+      .filter(item => item.missed > 0)
+      .sort((a, b) => b.missed - a.missed)
+      .slice(0, 5)
   }
 
   const topMissedThemes = processTopMissedThemes()
 
   if (topMissedThemes.length === 0) {
     return (
-      <Card className={cn("border-red-200 bg-red-50", className)}>
+      <Card className={cn("border-slate-200 bg-white shadow-sm", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center space-x-2 text-red-800">
-            <Target className="h-5 w-5" />
-            <span>Top Missed Themes</span>
+          <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+            <Target className="h-4 w-4 text-slate-500" />
+            <span>{t("gameReview.topMissedThemes")}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-gray-500">
-            <div className="text-4xl mb-2">🎯</div>
-            <p>No missed opportunities data available</p>
+          <div className="flex flex-col items-center justify-center py-8 text-center text-slate-500">
+            <Target className="h-6 w-6 text-slate-300 mb-2" />
+            <p className="text-sm">{t("gameReview.noMissedOpportunities")}</p>
           </div>
         </CardContent>
       </Card>
@@ -123,45 +121,44 @@ export function TopMissedThemesCard({
   }
 
   return (
-    <Card className={cn("border-red-200 bg-red-50", className)}>
+    <Card className={cn("border-slate-200 bg-white shadow-sm", className)}>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center space-x-2 text-red-800">
-          <Target className="h-5 w-5" />
-          <span>Top Missed Themes</span>
+        <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+          <Target className="h-4 w-4 text-blue-600" />
+          <span>{t("gameReview.topMissedThemes")}</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
+        <div className="divide-y divide-slate-100">
           {topMissedThemes.map((theme, index) => (
-            <div key={theme.theme} className="flex justify-between items-center">
-              <div className="flex items-center space-x-2">
-                <Badge variant="outline" className="text-xs font-medium">
+            <div key={theme.theme} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="w-5 text-xs font-medium tabular-nums text-slate-400">
                   #{index + 1}
-                </Badge>
-                <span className="font-medium text-red-900">{theme.displayName}</span>
+                </span>
+                <span className="text-sm font-medium text-slate-900 truncate">
+                  {theme.displayName}
+                </span>
               </div>
-              <div className="flex items-center space-x-3 text-sm">
-                <div className="text-red-700">
-                  <span className="font-semibold">{theme.missed}</span> missed
-                </div>
-                <div className={cn(
-                  "flex items-center space-x-1 font-semibold",
-                  theme.missRate <= 30 ? "text-green-700" :
-                  theme.missRate <= 50 ? "text-yellow-700" : "text-red-700"
-                )}>
-                  <TrendingDown className="h-3 w-3" />
-                  <span>{theme.missRate.toFixed(1)}%</span>
-                </div>
+              <div className="flex items-center gap-3 shrink-0 text-sm tabular-nums">
+                <span className="text-slate-500">
+                  <span className="font-semibold text-slate-900">{theme.missed}</span> {t("gameReview.missedCount")}
+                </span>
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium",
+                    theme.missRate <= 30
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : theme.missRate <= 50
+                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : "bg-rose-50 text-rose-700 border-rose-200"
+                  )}
+                >
+                  {theme.missRate.toFixed(1)}%
+                </span>
               </div>
             </div>
           ))}
-        </div>
-        
-        {/* Summary */}
-        <div className="mt-4 pt-3 border-t border-red-200">
-          <div className="text-xs text-red-700 text-center">
-            Focus on these themes to improve your tactical recognition
-          </div>
         </div>
       </CardContent>
     </Card>

@@ -51,7 +51,7 @@ test.describe('Sprint v2 API migration', () => {
 
     await page.goto('/puzzle-sprint/sprint')
 
-    await expect(page.getByText('Your turn')).toBeVisible()
+    await expect(page.getByText("Black's turn")).toBeVisible()
     await expect(page.getByText('Success 0/5')).toBeVisible()
     await attachScreenshot(page, testInfo, 'sprint-v2-loaded')
     await expectNoHorizontalOverflow(page)
@@ -102,8 +102,9 @@ test.describe('Sprint v2 API migration', () => {
 
     await page.goto('/puzzle-sprint/arrow-duel')
 
+    await expect(page.getByText("White's turn")).toBeVisible()
     await expect(page.getByText('Arrow Duel')).toBeVisible()
-    await expect(page.getByText('Choose the better move for white between the two arrows.')).toBeVisible()
+    await expect(page.getByText('Tap the better arrow')).toBeVisible()
     await expect(page.getByText('Success 0/5')).toBeVisible()
     await attachScreenshot(page, testInfo, 'arrow-duel-sprint-v2-loaded')
     await expectNoHorizontalOverflow(page)

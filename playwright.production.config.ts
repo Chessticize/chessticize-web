@@ -1,9 +1,13 @@
 import { defineConfig, devices } from '@playwright/test'
-import { resolveProductionStorageState } from './e2e/production-v2-config'
+import {
+  resolveProductionStorageState,
+  resolveVercelProtectionHeaders,
+} from './e2e/production-v2-config'
 
 const isCI = Boolean(process.env.CI)
-const baseURL = process.env.PROD_PLAYWRIGHT_BASE_URL || 'https://www.chessticize.com'
+const baseURL = process.env.PROD_PLAYWRIGHT_BASE_URL || 'https://app.chessticize.com'
 const storageState = resolveProductionStorageState()
+const extraHTTPHeaders = resolveVercelProtectionHeaders()
 
 export default defineConfig({
   testDir: './e2e',
@@ -18,6 +22,7 @@ export default defineConfig({
   use: {
     baseURL,
     storageState,
+    extraHTTPHeaders,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'off',

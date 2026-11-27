@@ -32,6 +32,13 @@ Create or provide one of these auth inputs:
 
 - `PROD_PLAYWRIGHT_STORAGE_STATE=/absolute/path/to/signed-in-storage-state.json`
 - `PROD_AUTH_TOKEN=<short-lived validation-account token>`
+- Optional (for Vercel Preview / `https://staging.chessticize.com` behind Deployment Protection):
+  `VERCEL_AUTOMATION_BYPASS_SECRET=<vercel-project-bypass-secret>`
+
+To validate pre-release changes on the `staging` branch before merging to `main`,
+pass `PROD_PLAYWRIGHT_BASE_URL=https://staging.chessticize.com` (and make sure
+`staging.chessticize.com` is listed under Firebase Authorized Domains + Google
+Cloud OAuth origins if testing interactive sign-in).
 
 The production Playwright config fails fast if
 `PROD_PLAYWRIGHT_STORAGE_STATE` points to a missing file. That is intentional:
@@ -50,7 +57,7 @@ This checks Settings, Game Review, and read-only Review Queue paths for v2
 signed-in APIs and rejects active requests to `/api/v1/` or `/graphql`.
 
 ```sh
-PROD_PLAYWRIGHT_BASE_URL=https://www.chessticize.com \
+PROD_PLAYWRIGHT_BASE_URL=https://app.chessticize.com \
 PROD_PLAYWRIGHT_STORAGE_STATE=/absolute/path/to/signed-in-storage-state.json \
 pnpm test:e2e:prod
 ```
@@ -81,7 +88,7 @@ unexpectedly create both sprint types.
 
 ```sh
 PROD_VALIDATE_SPRINT=true \
-PROD_PLAYWRIGHT_BASE_URL=https://www.chessticize.com \
+PROD_PLAYWRIGHT_BASE_URL=https://app.chessticize.com \
 PROD_PLAYWRIGHT_STORAGE_STATE=/absolute/path/to/signed-in-storage-state.json \
 pnpm test:e2e:prod -- --grep "sprint"
 ```
@@ -98,7 +105,7 @@ Arrow-duel sprint validation:
 
 ```sh
 PROD_VALIDATE_ARROW_DUEL_SPRINT=true \
-PROD_PLAYWRIGHT_BASE_URL=https://www.chessticize.com \
+PROD_PLAYWRIGHT_BASE_URL=https://app.chessticize.com \
 PROD_PLAYWRIGHT_STORAGE_STATE=/absolute/path/to/signed-in-storage-state.json \
 pnpm test:e2e:prod -- --grep "arrow-duel sprint"
 ```
@@ -129,7 +136,7 @@ PROD_SETTINGS_ELO_LABEL="Standard Sprint" \
 PROD_SETTINGS_ELO_TYPE="mixed 5/20" \
 PROD_SETTINGS_ELO_ORIGINAL_RATING=1200 \
 PROD_SETTINGS_ELO_TEST_RATING=1225 \
-PROD_PLAYWRIGHT_BASE_URL=https://www.chessticize.com \
+PROD_PLAYWRIGHT_BASE_URL=https://app.chessticize.com \
 PROD_PLAYWRIGHT_STORAGE_STATE=/absolute/path/to/signed-in-storage-state.json \
 pnpm test:e2e:prod -- --grep "Settings ELO save"
 ```
@@ -150,7 +157,7 @@ that same profile. Use only a profile that is safe to connect briefly.
 PROD_VALIDATE_SETTINGS_PROFILE=true \
 PROD_SETTINGS_PROFILE_PLATFORM=lichess.org \
 PROD_SETTINGS_PROFILE_USERNAME=disposable_validation_user \
-PROD_PLAYWRIGHT_BASE_URL=https://www.chessticize.com \
+PROD_PLAYWRIGHT_BASE_URL=https://app.chessticize.com \
 PROD_PLAYWRIGHT_STORAGE_STATE=/absolute/path/to/signed-in-storage-state.json \
 pnpm test:e2e:prod -- --grep "Settings profile create"
 ```
@@ -216,7 +223,7 @@ Run only when the validation profile is safe to mutate.
 
 ```sh
 PROD_VALIDATE_GAME_REVIEW_IMPORT_REFRESH=true \
-PROD_PLAYWRIGHT_BASE_URL=https://www.chessticize.com \
+PROD_PLAYWRIGHT_BASE_URL=https://app.chessticize.com \
 PROD_PLAYWRIGHT_STORAGE_STATE=/absolute/path/to/signed-in-storage-state.json \
 pnpm test:e2e:prod -- --grep "import refresh"
 ```

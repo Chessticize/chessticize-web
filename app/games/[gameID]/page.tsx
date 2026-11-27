@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { ArrowLeft, ExternalLink, Gamepad2, Loader2 } from "lucide-react"
+import { ArrowLeft, ExternalLink, Loader2 } from "lucide-react"
 import Navigation from "@/components/navigation"
 import Footer from "@/components/footer"
 import { MobileContainer, MobileLayout } from "@/components/ui/mobile-layout"
@@ -60,24 +60,19 @@ export default function GameDetailPage() {
 
   return (
     <MobileLayout fullHeight>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-slate-50">
         <Navigation />
-        <MobileContainer padding="lg">
-          <div className="mb-6">
-            <Link href="/games">
-              <Button variant="outline" className="mb-4">
+        <MobileContainer padding="lg" className="flex-1">
+          <div className="mb-6 sm:mb-8">
+            <Link href="/games" className="inline-block mb-4">
+              <Button variant="outline" size="sm" className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Games
               </Button>
             </Link>
-            <div className="flex items-center gap-3">
-              <div className="bg-emerald-100 p-3 rounded-lg">
-                <Gamepad2 className="h-7 w-7 text-emerald-700" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Game Detail</h1>
-                <p className="text-gray-600 mt-1">Imported game metadata from the v2 API.</p>
-              </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">Game Detail</h1>
+              <p className="text-sm sm:text-base text-slate-500 mt-1">Imported game metadata from your connected profile.</p>
             </div>
           </div>
 

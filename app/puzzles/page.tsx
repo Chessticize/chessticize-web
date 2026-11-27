@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react"
 import Link from "next/link"
-import { ArrowLeft, ChevronLeft, ChevronRight, Eye, Loader2, Puzzle, Search } from "lucide-react"
+import { ArrowLeft, ChevronLeft, ChevronRight, Eye, Loader2, Search } from "lucide-react"
 import Navigation from "@/components/navigation"
 import Footer from "@/components/footer"
 import { MobileContainer, MobileLayout } from "@/components/ui/mobile-layout"
@@ -110,27 +110,22 @@ export default function PuzzlesPage() {
 
   return (
     <MobileLayout fullHeight>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-slate-50">
         <Navigation />
-        <MobileContainer padding="lg">
-          <div className="mb-6">
-            <Link href="/game-review">
-              <Button variant="outline" className="mb-4">
+        <MobileContainer padding="lg" className="flex-1">
+          <div className="mb-6 sm:mb-8">
+            <Link href="/game-review" className="inline-block mb-4">
+              <Button variant="outline" size="sm" className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Game Review
+                Back to Game Analysis
               </Button>
             </Link>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <div className="bg-violet-100 p-3 rounded-lg">
-                  <Puzzle className="h-7 w-7 text-violet-700" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">My Puzzles</h1>
-                  <p className="text-gray-600 mt-1">Browse tactical positions generated from your games.</p>
-                </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">My Puzzles</h1>
+                <p className="text-sm sm:text-base text-slate-500 mt-1">Browse tactical positions generated from your games.</p>
               </div>
-              <Badge variant="outline" className="self-start sm:self-auto">
+              <Badge variant="outline" className="self-start sm:self-auto bg-blue-50/80 border-blue-200 text-blue-700 tabular-nums px-3 py-1">
                 {totalCount.toLocaleString()} puzzles
               </Badge>
             </div>
@@ -148,19 +143,19 @@ export default function PuzzlesPage() {
             <EmptyState title="Sign in to view puzzles" message="Your generated tactical positions appear here after sign-in." />
           ) : (
             <>
-              <Card className="mb-6">
+              <Card className="mb-6 bg-white border-slate-200 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Search className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+                    <Search className="h-4 w-4 text-slate-500" />
                     Filters
-                    {activeFilterCount > 0 && <Badge variant="secondary">{activeFilterCount}</Badge>}
+                    {activeFilterCount > 0 && <Badge variant="secondary" className="bg-slate-100 text-slate-700 shadow-none">{activeFilterCount}</Badge>}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={applyFilters} className="grid gap-4 lg:grid-cols-6">
                     <div className="space-y-2">
                       <Label htmlFor="platform">Platform</Label>
-                      <select id="platform" value={platform} onChange={(event) => setPlatform(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                      <select id="platform" value={platform} onChange={(event) => setPlatform(event.target.value)} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900">
                         <option value="">All</option>
                         <option value="lichess.org">Lichess</option>
                         <option value="chess.com">Chess.com</option>
@@ -172,7 +167,7 @@ export default function PuzzlesPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="theme-group">Theme Group</Label>
-                      <select id="theme-group" value={themeGroup} onChange={(event) => setThemeGroup(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                      <select id="theme-group" value={themeGroup} onChange={(event) => setThemeGroup(event.target.value)} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900">
                         <option value="">All</option>
                         <option value="missed_opportunity">Missed Opportunity</option>
                         <option value="caught_opportunity">Caught Opportunity</option>
@@ -184,7 +179,7 @@ export default function PuzzlesPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="game-phase">Game Phase</Label>
-                      <select id="game-phase" value={gamePhase} onChange={(event) => setGamePhase(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                      <select id="game-phase" value={gamePhase} onChange={(event) => setGamePhase(event.target.value)} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900">
                         <option value="">All</option>
                         <option value="opening">Opening</option>
                         <option value="middlegame">Middlegame</option>
@@ -196,11 +191,11 @@ export default function PuzzlesPage() {
                       <Input id="tag" value={tag} onChange={(event) => setTag(event.target.value)} placeholder="fork" />
                     </div>
                     <div className="flex items-end gap-2">
-                      <Button type="submit" className="flex-1">
+                      <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
                         <Search className="h-4 w-4 mr-2" />
                         Apply
                       </Button>
-                      <Button type="button" variant="outline" onClick={clearFilters}>Clear</Button>
+                      <Button type="button" variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-50" onClick={clearFilters}>Clear</Button>
                     </div>
                   </form>
                   {importedProfiles.length > 0 && (
@@ -221,7 +216,7 @@ export default function PuzzlesPage() {
                             })
                             setOffset(0)
                           }}
-                          className="rounded-md border bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                          className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
                         >
                           {profile.platform} / {profile.username}
                         </button>
@@ -231,7 +226,7 @@ export default function PuzzlesPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-white border-slate-200 shadow-sm">
                 <CardContent className="p-0">
                   {isLoading ? (
                     <LoadingState label="Loading puzzles..." />
@@ -300,7 +295,7 @@ function PuzzleList({ puzzles }: { puzzles: V2PuzzleListItem[] }) {
                 <Badge key={tag} variant="outline">{tag}</Badge>
               ))}
             </div>
-            <Link href={`/puzzles/${encodeURIComponent(puzzle.id)}`} className="mt-3 inline-flex items-center text-sm text-violet-700 hover:underline">
+            <Link href={`/puzzles/${encodeURIComponent(puzzle.id)}`} className="mt-3 inline-flex items-center text-sm font-medium text-blue-600 hover:underline">
               Details
               <Eye className="h-3.5 w-3.5 ml-1" />
             </Link>
@@ -352,7 +347,7 @@ function PuzzleTable({ puzzles }: { puzzles: V2PuzzleListItem[] }) {
             </TableCell>
             <TableCell>{formatLabel(puzzle.puzzle_color)}</TableCell>
             <TableCell className="text-right">
-              <Link href={`/puzzles/${encodeURIComponent(puzzle.id)}`} className="inline-flex items-center text-sm text-violet-700 hover:underline">
+              <Link href={`/puzzles/${encodeURIComponent(puzzle.id)}`} className="inline-flex items-center text-sm font-medium text-blue-600 hover:underline">
                 Details
                 <Eye className="h-3.5 w-3.5 ml-1" />
               </Link>

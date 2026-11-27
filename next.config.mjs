@@ -1,21 +1,79 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   images: {
     unoptimized: true,
+  },
+  // Proxy Firebase Auth handler paths on the same origin so iOS Safari / Chrome
+  // (WebKit storage partitioning) can complete OAuth without cross-site state loss.
+  async rewrites() {
+    const firebaseProjectId =
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'chessticize'
+    return [
+      {
+        source: '/__/auth/:path*',
+        destination: `https://${firebaseProjectId}.firebaseapp.com/__/auth/:path*`,
+      },
+      {
+        source: '/__/firebase/init.json',
+        destination: '/api/firebase-init',
+      },
+    ]
   },
   // Headers configuration
   async headers() {
     return [
       {
+        // Immutable cache for content-hashed Next.js build assets
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'same-origin',
+          },
+        ],
+      },
+      {
+        // Static Stockfish engine & worker assets must send COEP + CORP so dedicated
+        // workers spawned from cross-origin-isolated pages are not blocked by COEP.
+        source: '/stockfish/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
+          },
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'require-corp',
+          },
+          {
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'same-origin',
+          },
+        ],
+      },
+      {
+        // Cache app icons while preserving COEP compatibility
+        source: '/icons/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
+          },
+          {
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'same-origin',
+          },
+        ],
+      },
+      {
         // Cross-origin isolation is required for the browser Stockfish worker.
-        // Auth routes keep a popup-friendly policy for OAuth/Firebase flows.
-        source: '/((?!login|register|auth).*)',
+        // Exclude landing (/), auth, Firebase proxy (/__/*), API, and legal routes
+        // so OAuth popups/iframes and redirects are never blocked by inherited COOP/COEP.
+        source: '/((?!$|login|register|auth|terms|privacy|__|api|_next/static|stockfish|icons).*)',
         headers: [
           {
             key: 'Cross-Origin-Embedder-Policy',

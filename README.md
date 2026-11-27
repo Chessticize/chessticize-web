@@ -100,7 +100,7 @@ Create a signed-in storage state with Playwright or provide a short-lived
 `PROD_AUTH_TOKEN`, then run the read-only checks:
 
 ```bash
-PROD_PLAYWRIGHT_BASE_URL=https://www.chessticize.com \
+PROD_PLAYWRIGHT_BASE_URL=https://app.chessticize.com \
 PROD_PLAYWRIGHT_STORAGE_STATE=/absolute/path/to/signed-in-storage-state.json \
 pnpm test:e2e:prod
 ```
@@ -115,7 +115,7 @@ finishing a sprint, so run it only on a validation account:
 
 ```bash
 PROD_VALIDATE_SPRINT=true \
-PROD_PLAYWRIGHT_BASE_URL=https://www.chessticize.com \
+PROD_PLAYWRIGHT_BASE_URL=https://app.chessticize.com \
 PROD_PLAYWRIGHT_STORAGE_STATE=/absolute/path/to/signed-in-storage-state.json \
 pnpm test:e2e:prod -- --grep "sprint"
 ```
@@ -124,7 +124,7 @@ Arrow-duel sprint validation is separate:
 
 ```bash
 PROD_VALIDATE_ARROW_DUEL_SPRINT=true \
-PROD_PLAYWRIGHT_BASE_URL=https://www.chessticize.com \
+PROD_PLAYWRIGHT_BASE_URL=https://app.chessticize.com \
 PROD_PLAYWRIGHT_STORAGE_STATE=/absolute/path/to/signed-in-storage-state.json \
 pnpm test:e2e:prod -- --grep "arrow-duel sprint"
 ```
@@ -138,14 +138,14 @@ profile username and deletes the created profile.
 PROD_VALIDATE_SETTINGS_ELO=true \
 PROD_SETTINGS_ELO_ORIGINAL_RATING=1200 \
 PROD_SETTINGS_ELO_TEST_RATING=1225 \
-PROD_PLAYWRIGHT_BASE_URL=https://www.chessticize.com \
+PROD_PLAYWRIGHT_BASE_URL=https://app.chessticize.com \
 PROD_PLAYWRIGHT_STORAGE_STATE=/absolute/path/to/signed-in-storage-state.json \
 pnpm test:e2e:prod -- --grep "Settings ELO save"
 
 PROD_VALIDATE_SETTINGS_PROFILE=true \
 PROD_SETTINGS_PROFILE_PLATFORM=lichess.org \
 PROD_SETTINGS_PROFILE_USERNAME=disposable_validation_user \
-PROD_PLAYWRIGHT_BASE_URL=https://www.chessticize.com \
+PROD_PLAYWRIGHT_BASE_URL=https://app.chessticize.com \
 PROD_PLAYWRIGHT_STORAGE_STATE=/absolute/path/to/signed-in-storage-state.json \
 pnpm test:e2e:prod -- --grep "Settings profile create"
 ```
@@ -157,7 +157,7 @@ clicking refresh if import-status evidence says the account is not safe.
 
 ```bash
 PROD_VALIDATE_GAME_REVIEW_IMPORT_REFRESH=true \
-PROD_PLAYWRIGHT_BASE_URL=https://www.chessticize.com \
+PROD_PLAYWRIGHT_BASE_URL=https://app.chessticize.com \
 PROD_PLAYWRIGHT_STORAGE_STATE=/absolute/path/to/signed-in-storage-state.json \
 pnpm test:e2e:prod -- --grep "import refresh"
 ```

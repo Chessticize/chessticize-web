@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { LucideIcon, ChevronRight, Lightbulb, TrendingUp, AlertTriangle } from "lucide-react"
+import { ChevronRight, Lightbulb, TrendingUp, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export interface InsightCardProps {
@@ -29,39 +29,35 @@ const typeConfig = {
   strength: {
     icon: TrendingUp,
     colors: {
-      card: 'border-green-200 bg-green-50',
-      header: 'text-green-800',
-      badge: 'bg-green-100 text-green-800'
+      icon: 'text-emerald-600',
+      badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
     },
-    badgeText: 'Strength'
+    badgeText: 'Strength',
   },
   weakness: {
     icon: AlertTriangle,
     colors: {
-      card: 'border-red-200 bg-red-50',
-      header: 'text-red-800',
-      badge: 'bg-red-100 text-red-800'
+      icon: 'text-rose-600',
+      badge: 'bg-rose-50 text-rose-700 border border-rose-200',
     },
-    badgeText: 'Area for Improvement'
+    badgeText: 'Area for Improvement',
   },
   trend: {
     icon: TrendingUp,
     colors: {
-      card: 'border-blue-200 bg-blue-50',
-      header: 'text-blue-800',
-      badge: 'bg-blue-100 text-blue-800'
+      icon: 'text-blue-600',
+      badge: 'bg-blue-50 text-blue-700 border border-blue-200',
     },
-    badgeText: 'Trend'
+    badgeText: 'Trend',
   },
   recommendation: {
     icon: Lightbulb,
     colors: {
-      card: 'border-orange-200 bg-orange-50',
-      header: 'text-orange-800',
-      badge: 'bg-orange-100 text-orange-800'
+      icon: 'text-amber-600',
+      badge: 'bg-amber-50 text-amber-700 border border-amber-200',
     },
-    badgeText: 'Recommendation'
-  }
+    badgeText: 'Recommendation',
+  },
 }
 
 export function InsightCard({
@@ -72,19 +68,19 @@ export function InsightCard({
   recommendations,
   actionButton,
   isLoading = false,
-  className
+  className,
 }: InsightCardProps) {
   const config = typeConfig[type]
   const Icon = config.icon
 
   if (isLoading) {
     return (
-      <Card className={cn(config.colors.card, 'transition-all duration-300', className)}>
+      <Card className={cn('border-slate-200 bg-white shadow-sm', className)}>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Icon className="h-5 w-5" />
-              <Skeleton className="h-6 w-32" />
+            <div className="flex items-center gap-2">
+              <Icon className={cn('h-4 w-4', config.colors.icon)} />
+              <Skeleton className="h-5 w-32" />
             </div>
             <Skeleton className="h-6 w-20 rounded-full" />
           </div>
@@ -102,66 +98,67 @@ export function InsightCard({
   }
 
   return (
-    <Card className={cn(
-      config.colors.card, 
-      'transition-all duration-300 hover:shadow-md',
-      className
-    )}>
+    <Card className={cn('border-slate-200 bg-white shadow-sm transition-colors hover:border-slate-300', className)}>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className={cn('flex items-center space-x-2', config.colors.header)}>
-            <Icon className="h-5 w-5" />
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+            <Icon className={cn('h-4 w-4', config.colors.icon)} />
             <span>{title}</span>
           </CardTitle>
-          <Badge className={config.colors.badge}>
+          <Badge variant="secondary" className={cn('font-medium shadow-none', config.colors.badge)}>
             {config.badgeText}
           </Badge>
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
-        <p className="text-gray-700 leading-relaxed">{description}</p>
-        
+        <p className="text-sm text-slate-600 leading-relaxed">{description}</p>
+
         {metrics && metrics.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {metrics.map((metric, index) => (
-              <div key={index} className="flex justify-between items-center p-3 bg-white rounded-lg border">
-                <span className="text-sm font-medium text-gray-600">{metric.label}</span>
-                <div className="flex items-center space-x-2">
-                  <span className="font-semibold text-gray-900">
+              <div key={index} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <span className="text-sm text-slate-600">{metric.label}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold tabular-nums text-slate-900">
                     {typeof metric.value === 'number' ? metric.value.toLocaleString() : metric.value}
                   </span>
                   {metric.trend && (
-                    <div className={cn(
-                      'w-2 h-2 rounded-full',
-                      metric.trend === 'up' ? 'bg-green-500' :
-                      metric.trend === 'down' ? 'bg-red-500' : 'bg-gray-400'
-                    )} />
+                    <div
+                      className={cn(
+                        'w-2 h-2 rounded-full',
+                        metric.trend === 'up'
+                          ? 'bg-emerald-500'
+                          : metric.trend === 'down'
+                            ? 'bg-rose-500'
+                            : 'bg-slate-400'
+                      )}
+                    />
                   )}
                 </div>
               </div>
             ))}
           </div>
         )}
-        
+
         {recommendations && recommendations.length > 0 && (
           <div className="space-y-2">
-            <h4 className="font-medium text-gray-900">Recommendations:</h4>
+            <h4 className="text-sm font-medium text-slate-900">Recommendations:</h4>
             <ul className="space-y-1">
               {recommendations.map((rec, index) => (
-                <li key={index} className="flex items-start space-x-2 text-sm text-gray-700">
-                  <ChevronRight className="h-4 w-4 mt-0.5 text-gray-400 flex-shrink-0" />
+                <li key={index} className="flex items-start gap-2 text-sm text-slate-600">
+                  <ChevronRight className="h-4 w-4 mt-0.5 text-slate-400 flex-shrink-0" />
                   <span>{rec}</span>
                 </li>
               ))}
             </ul>
           </div>
         )}
-        
+
         {actionButton && (
-          <Button 
+          <Button
             onClick={actionButton.onClick}
-            className="w-full mt-4"
+            className="w-full mt-4 border-slate-200 text-slate-700 hover:bg-slate-50"
             variant="outline"
           >
             {actionButton.text}

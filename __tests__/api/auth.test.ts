@@ -91,7 +91,8 @@ describe('profile API client', () => {
           last_game_played_at: null,
           updated_at: '2026-05-18T10:01:00Z'
         }
-      ]
+      ],
+      preferences: {}
     })
   })
 
@@ -112,7 +113,8 @@ describe('profile API client', () => {
       updated_at: '',
       last_sign_in_at: '',
       elos: [],
-      chess_profiles: []
+      chess_profiles: [],
+      preferences: {}
     })
   })
 
@@ -137,7 +139,8 @@ describe('profile API client', () => {
           last_game_played_at: null,
           updated_at: '2026-05-18T10:01:00Z'
         }
-      ]
+      ],
+      preferences: {}
     }), { status: 200 }))
 
     const profiles = await getChessProfiles()

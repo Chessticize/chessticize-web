@@ -4,6 +4,10 @@ import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { SprintResults } from '@/components/puzzle-sprint/SprintResults'
 
+vi.mock('@/components/navigation', () => ({
+  default: () => <nav data-testid="mock-navigation" />,
+}))
+
 const mockGetSprintPuzzles = vi.hoisted(() => vi.fn())
 
 vi.mock('@/hooks/useSprintApi', async (importOriginal) => {

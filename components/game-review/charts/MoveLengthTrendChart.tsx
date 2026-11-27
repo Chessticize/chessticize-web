@@ -1,6 +1,7 @@
 "use client"
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ComposedChart } from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
+import { TrendingUp, TrendingDown, Minus } from "lucide-react"
 import { GameReviewData } from "@/hooks/useGameReviewData"
 import { useEffect, useState } from "react"
 
@@ -17,10 +18,10 @@ export function MoveLengthTrendChart({ data }: MoveLengthTrendChartProps) {
 
   if (!isClient) {
     return (
-      <div className="h-64 flex items-center justify-center text-gray-500">
-        <div className="text-center">
-          <div className="text-4xl mb-2">📈</div>
-          <p>Loading chart...</p>
+      <div className="h-64 flex items-center justify-center text-slate-500">
+        <div className="flex flex-col items-center text-center">
+          <TrendingUp className="h-6 w-6 text-slate-300 mb-2" />
+          <p className="text-sm">Loading chart...</p>
         </div>
       </div>
     )
@@ -28,133 +29,107 @@ export function MoveLengthTrendChart({ data }: MoveLengthTrendChartProps) {
 
   if (!data?.opponentMistakesTimeSeries?.nodes?.length && !data?.myMistakesTimeSeries?.nodes?.length) {
     return (
-      <div className="h-64 flex items-center justify-center text-gray-500">
-        <div className="text-center">
-          <div className="text-4xl mb-2">📈</div>
-          <p>No move length trend data available</p>
+      <div className="h-64 flex items-center justify-center text-slate-500">
+        <div className="flex flex-col items-center text-center">
+          <TrendingUp className="h-6 w-6 text-slate-300 mb-2" />
+          <p className="text-sm">No move length trend data available</p>
         </div>
       </div>
     )
   }
 
-  // Helper function for consistent date formatting (SSR-safe)
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    const month = months[date.getMonth()]
-    const day = date.getDate()
-    return `${month} ${day}`
+    return `${months[date.getMonth()]} ${date.getDate()}`
   }
 
   const formatFullDate = (dateString: string) => {
     const date = new Date(dateString)
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    const weekday = weekdays[date.getDay()]
-    const month = months[date.getMonth()]
-    const day = date.getDate()
-    const year = date.getFullYear()
-    return `${weekday}, ${month} ${day}, ${year}`
+    return `${weekdays[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`
   }
 
-  // Process opponent mistakes time series data
   const opponentData = data.opponentMistakesTimeSeries?.nodes?.map(node => {
     const date = new Date(node.start_time)
-    // Use week start for alignment (Monday of the week)
     const weekStart = new Date(date)
-    weekStart.setDate(date.getDate() - date.getDay() + 1) // Monday
+    weekStart.setDate(date.getDate() - date.getDay() + 1)
     weekStart.setHours(0, 0, 0, 0)
     const weekKey = weekStart.toISOString().split('T')[0]
 
     return {
       weekKey,
       date: formatDate(node.start_time),
-      opponentMoveLength: (node.stats.average_move_length || 0) / 2, // Divide by 2 for actual puzzle moves
+      opponentMoveLength: (node.stats.average_move_length || 0) / 2,
       fullDate: formatFullDate(node.start_time),
       timestamp: weekStart.getTime(),
-      originalTimestamp: date.getTime()
+      originalTimestamp: date.getTime(),
     }
   }) || []
 
-  // Process my mistakes time series data
   const myMistakesData = data.myMistakesTimeSeries?.nodes?.map(node => {
     const date = new Date(node.start_time)
-    // Use week start for alignment (Monday of the week)
     const weekStart = new Date(date)
-    weekStart.setDate(date.getDate() - date.getDay() + 1) // Monday
+    weekStart.setDate(date.getDate() - date.getDay() + 1)
     weekStart.setHours(0, 0, 0, 0)
     const weekKey = weekStart.toISOString().split('T')[0]
 
     return {
       weekKey,
       date: formatDate(node.start_time),
-      myMoveLength: (node.stats.average_move_length || 0) / 2, // Divide by 2 for actual puzzle moves
+      myMoveLength: (node.stats.average_move_length || 0) / 2,
       fullDate: formatFullDate(node.start_time),
       timestamp: weekStart.getTime(),
-      originalTimestamp: date.getTime()
+      originalTimestamp: date.getTime(),
     }
   }) || []
 
-  // Create a combined timeline using week alignment
   const allWeekKeys = new Set<string>()
-
-  // Collect all unique week keys
   opponentData.forEach(item => allWeekKeys.add(item.weekKey))
   myMistakesData.forEach(item => allWeekKeys.add(item.weekKey))
 
-  // Create timeline data with week-aligned data
-  const timelineData = Array.from(allWeekKeys).map(weekKey => {
-    const opponentItem = opponentData.find(item => item.weekKey === weekKey)
-    const myItem = myMistakesData.find(item => item.weekKey === weekKey)
+  const timelineData = Array.from(allWeekKeys)
+    .map(weekKey => {
+      const opponentItem = opponentData.find(item => item.weekKey === weekKey)
+      const myItem = myMistakesData.find(item => item.weekKey === weekKey)
+      const referenceItem = opponentItem || myItem
+      const timestamp = new Date(weekKey + 'T00:00:00Z').getTime()
 
-    // Use the first available item for date formatting, prefer opponent data
-    const referenceItem = opponentItem || myItem
-    const timestamp = new Date(weekKey + 'T00:00:00Z').getTime()
-
-    return {
-      timestamp,
-      weekKey,
-      date: referenceItem!.date,
-      fullDate: referenceItem!.fullDate,
-      opponentMoveLength: opponentItem?.opponentMoveLength,
-      myMoveLength: myItem?.myMoveLength
-    }
-  }).sort((a, b) => a.timestamp - b.timestamp)
-
-  // For statistics, use the original data
-  const validOpponentData = opponentData
-  const validMyData = myMistakesData
-
-  // Debug logging (can be removed in production)
-  // console.log('MoveLengthTrendChart - opponentData sample:', opponentData.slice(0, 3))
-  // console.log('MoveLengthTrendChart - myMistakesData sample:', myMistakesData.slice(0, 3))
-  // console.log('MoveLengthTrendChart - timelineData sample:', timelineData.slice(0, 3))
+      return {
+        timestamp,
+        weekKey,
+        date: referenceItem!.date,
+        fullDate: referenceItem!.fullDate,
+        opponentMoveLength: opponentItem?.opponentMoveLength,
+        myMoveLength: myItem?.myMoveLength,
+      }
+    })
+    .sort((a, b) => a.timestamp - b.timestamp)
 
   if (timelineData.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center text-gray-500">
-        <div className="text-center">
-          <div className="text-4xl mb-2">📈</div>
-          <p>No move length trend data available</p>
+      <div className="h-64 flex items-center justify-center text-slate-500">
+        <div className="flex flex-col items-center text-center">
+          <TrendingUp className="h-6 w-6 text-slate-300 mb-2" />
+          <p className="text-sm">No move length trend data available</p>
         </div>
       </div>
     )
   }
 
-  // Custom tooltip
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload
+      const entry = payload[0].payload
       return (
-        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-medium text-gray-900 mb-2">Week of {data.fullDate}</p>
-          <div className="space-y-1">
-            {payload.map((entry: any, index: number) => {
-              // Only show entries with valid (non-null) values
-              if (entry.value !== null && entry.value !== undefined) {
+        <div className="bg-white p-3 border border-slate-200 rounded-lg shadow-sm">
+          <p className="font-medium text-slate-900 mb-1.5">Week of {entry.fullDate}</p>
+          <div className="space-y-1 text-sm tabular-nums">
+            {payload.map((item: any, index: number) => {
+              if (item.value !== null && item.value !== undefined) {
                 return (
-                  <p key={index} className="text-sm" style={{ color: entry.color }}>
-                    {entry.name}: <span className="font-semibold">{entry.value.toFixed(1)} moves</span>
+                  <p key={index} style={{ color: item.color }}>
+                    {item.name}: <span className="font-semibold">{item.value.toFixed(1)} moves</span>
                   </p>
                 )
               }
@@ -167,16 +142,23 @@ export function MoveLengthTrendChart({ data }: MoveLengthTrendChartProps) {
     return null
   }
 
-  // Calculate statistics using only valid data points
-  const avgOpponentLength = validOpponentData.length > 0 ?
-    validOpponentData.reduce((sum, d) => sum + d.opponentMoveLength, 0) / validOpponentData.length : 0
-  const avgMyLength = validMyData.length > 0 ?
-    validMyData.reduce((sum, d) => sum + d.myMoveLength, 0) / validMyData.length : 0
+  const avgOpponentLength =
+    opponentData.length > 0
+      ? opponentData.reduce((sum, d) => sum + d.opponentMoveLength, 0) / opponentData.length
+      : 0
+  const avgMyLength =
+    myMistakesData.length > 0
+      ? myMistakesData.reduce((sum, d) => sum + d.myMoveLength, 0) / myMistakesData.length
+      : 0
 
-  const opponentTrend = validOpponentData.length >= 2 ?
-    validOpponentData[validOpponentData.length - 1].opponentMoveLength - validOpponentData[0].opponentMoveLength : 0
-  const myTrend = validMyData.length >= 2 ?
-    validMyData[validMyData.length - 1].myMoveLength - validMyData[0].myMoveLength : 0
+  const opponentTrend =
+    opponentData.length >= 2
+      ? opponentData[opponentData.length - 1].opponentMoveLength - opponentData[0].opponentMoveLength
+      : 0
+  const myTrend =
+    myMistakesData.length >= 2
+      ? myMistakesData[myMistakesData.length - 1].myMoveLength - myMistakesData[0].myMoveLength
+      : 0
 
   const getComplexityLabel = (length: number) => {
     if (length <= 3) return 'Simple'
@@ -184,40 +166,39 @@ export function MoveLengthTrendChart({ data }: MoveLengthTrendChartProps) {
     return 'Complex'
   }
 
-  const getTrendIcon = (trend: number) => {
-    if (Math.abs(trend) < 0.2) return '➡️'
-    return trend > 0 ? '📈' : '📉'
+  const renderTrendIcon = (trend: number) => {
+    if (Math.abs(trend) < 0.2) return <Minus className="h-4 w-4 text-slate-500 mx-auto" />
+    return trend > 0 ? (
+      <TrendingUp className="h-4 w-4 text-slate-700 mx-auto" />
+    ) : (
+      <TrendingDown className="h-4 w-4 text-slate-700 mx-auto" />
+    )
   }
 
-  const getTrendLabel = (trend: number, type: 'opponent' | 'my') => {
+  const getTrendLabel = (trend: number) => {
     if (Math.abs(trend) < 0.2) return 'Stable'
-    if (type === 'opponent') {
-      return trend > 0 ? 'More Complex' : 'Simpler'
-    } else {
-      return trend > 0 ? 'More Complex' : 'Simpler'
-    }
+    return trend > 0 ? 'More Complex' : 'Simpler'
   }
 
   return (
     <div className="space-y-4">
-      {/* Chart */}
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={timelineData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis
               dataKey="date"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: '#6b7280' }}
+              tick={{ fontSize: 12, fill: '#64748b' }}
             />
             <YAxis
               domain={[0, 'dataMax + 1']}
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: '#6b7280' }}
+              tick={{ fontSize: 12, fill: '#64748b' }}
               tickFormatter={(value) => value.toFixed(1)}
-              label={{ value: 'Average Puzzle Moves', angle: -90, position: 'insideLeft' }}
+              label={{ value: 'Average Puzzle Moves', angle: -90, position: 'insideLeft', fill: '#64748b', fontSize: 11 }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
@@ -225,96 +206,92 @@ export function MoveLengthTrendChart({ data }: MoveLengthTrendChartProps) {
               type="monotone"
               dataKey="opponentMoveLength"
               stroke="#2563eb"
-              strokeWidth={3}
-              dot={{ fill: '#2563eb', strokeWidth: 2, r: 5 }}
-              activeDot={{ r: 7, fill: '#1d4ed8' }}
+              strokeWidth={2.5}
+              dot={{ fill: '#2563eb', strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, fill: '#1d4ed8' }}
               name="Missed Opportunities"
               connectNulls={false}
             />
             <Line
               type="monotone"
               dataKey="myMoveLength"
-              stroke="#dc2626"
-              strokeWidth={3}
-              dot={{ fill: '#dc2626', strokeWidth: 2, r: 5 }}
-              activeDot={{ r: 7, fill: '#b91c1c' }}
+              stroke="#e11d48"
+              strokeWidth={2.5}
+              dot={{ fill: '#e11d48', strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, fill: '#be123c' }}
               name="My Mistakes"
               connectNulls={false}
             />
           </LineChart>
         </ResponsiveContainer>
       </div>
-      
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* Opponent Mistakes */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium text-blue-700 flex items-center space-x-2">
-            <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="space-y-2.5">
+          <h4 className="text-sm font-medium text-slate-900 flex items-center gap-2">
+            <div className="w-2.5 h-2.5 bg-blue-600 rounded-full" />
             <span>Missed Opportunities</span>
           </h4>
           <div className="grid grid-cols-2 gap-3">
-            <div className="text-center p-3 bg-blue-50 rounded-lg">
-              <div className="text-lg font-semibold text-blue-900">{avgOpponentLength.toFixed(1)}</div>
-              <div className="text-xs text-blue-700">Average Length</div>
-              <div className="text-xs font-medium text-blue-600">
+            <div className="text-center p-3 bg-slate-50 border border-slate-200 rounded-lg">
+              <div className="text-lg font-semibold tabular-nums text-slate-900">{avgOpponentLength.toFixed(1)}</div>
+              <div className="text-xs text-slate-500">Average Length</div>
+              <div className="text-xs font-medium text-slate-700 mt-0.5">
                 {getComplexityLabel(avgOpponentLength)}
               </div>
             </div>
-            <div className="text-center p-3 bg-blue-50 rounded-lg">
-              <div className="text-lg font-semibold text-blue-900">{getTrendIcon(opponentTrend)}</div>
-              <div className="text-xs text-blue-700">Trend</div>
-              <div className="text-xs font-medium text-blue-600">
-                {getTrendLabel(opponentTrend, 'opponent')}
+            <div className="text-center p-3 bg-slate-50 border border-slate-200 rounded-lg">
+              <div className="py-1">{renderTrendIcon(opponentTrend)}</div>
+              <div className="text-xs text-slate-500">Trend</div>
+              <div className="text-xs font-medium text-slate-700 mt-0.5">
+                {getTrendLabel(opponentTrend)}
               </div>
             </div>
           </div>
         </div>
 
-        {/* My Mistakes */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium text-red-700 flex items-center space-x-2">
-            <div className="w-3 h-3 bg-red-600 rounded-full"></div>
+        <div className="space-y-2.5">
+          <h4 className="text-sm font-medium text-slate-900 flex items-center gap-2">
+            <div className="w-2.5 h-2.5 bg-rose-600 rounded-full" />
             <span>My Mistakes</span>
           </h4>
           <div className="grid grid-cols-2 gap-3">
-            <div className="text-center p-3 bg-red-50 rounded-lg">
-              <div className="text-lg font-semibold text-red-900">{avgMyLength.toFixed(1)}</div>
-              <div className="text-xs text-red-700">Average Length</div>
-              <div className="text-xs font-medium text-red-600">
+            <div className="text-center p-3 bg-slate-50 border border-slate-200 rounded-lg">
+              <div className="text-lg font-semibold tabular-nums text-slate-900">{avgMyLength.toFixed(1)}</div>
+              <div className="text-xs text-slate-500">Average Length</div>
+              <div className="text-xs font-medium text-slate-700 mt-0.5">
                 {getComplexityLabel(avgMyLength)}
               </div>
             </div>
-            <div className="text-center p-3 bg-red-50 rounded-lg">
-              <div className="text-lg font-semibold text-red-900">{getTrendIcon(myTrend)}</div>
-              <div className="text-xs text-red-700">Trend</div>
-              <div className="text-xs font-medium text-red-600">
-                {getTrendLabel(myTrend, 'my')}
+            <div className="text-center p-3 bg-slate-50 border border-slate-200 rounded-lg">
+              <div className="py-1">{renderTrendIcon(myTrend)}</div>
+              <div className="text-xs text-slate-500">Trend</div>
+              <div className="text-xs font-medium text-slate-700 mt-0.5">
+                {getTrendLabel(myTrend)}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Insights */}
-      <div className="pt-4 border-t border-gray-200">
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-900">Complexity Analysis</h4>
-          <div className="text-sm text-gray-700 space-y-1">
+      <div className="pt-4 border-t border-slate-100">
+        <div className="space-y-1.5">
+          <h4 className="text-xs font-medium text-slate-500">Complexity Analysis</h4>
+          <div className="text-sm text-slate-700 space-y-1">
             {avgOpponentLength > avgMyLength ? (
-              <p>🎯 You're missing more complex tactical opportunities than the mistakes you make. Focus on improving pattern recognition for longer sequences.</p>
+              <p>You miss more complex tactical opportunities than the mistakes you make. Focus on pattern recognition for longer sequences.</p>
             ) : avgMyLength > avgOpponentLength ? (
-              <p>⚠️ Your mistakes tend to be in more complex positions than the opportunities you miss. Consider slowing down in complicated positions.</p>
+              <p>Your mistakes tend to occur in more complex positions than the opportunities you miss. Consider slowing down in complicated positions.</p>
             ) : (
-              <p>⚖️ The complexity of missed opportunities and your mistakes is similar. Work on both pattern recognition and careful calculation.</p>
+              <p>The complexity of missed opportunities and your mistakes is similar.</p>
             )}
-            
+
             {opponentTrend > 0.5 && (
-              <p className="text-red-600">📈 Missed opportunities are getting more complex over time - you may be facing stronger opponents.</p>
+              <p className="text-rose-700">Missed opportunities are getting more complex over time.</p>
             )}
-            
+
             {myTrend < -0.5 && (
-              <p className="text-green-600">📉 Great! Your mistakes are becoming simpler over time, showing improved tactical awareness.</p>
+              <p className="text-emerald-700">Your mistakes are becoming simpler over time, showing improved tactical awareness.</p>
             )}
           </div>
         </div>

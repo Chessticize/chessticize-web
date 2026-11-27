@@ -50,12 +50,21 @@ test.describe('Migrated v2 signed-in read routes', () => {
       await fulfillJSON(route, dashboardAttemptStatsResponse())
     })
 
+    await page.route('**/api/v2/me/stats/sprints**', async (route) => {
+      await fulfillJSON(route, {
+        range: { from: '2025-06-20T00:00:00Z', to: now },
+        group_by: 'day',
+        group_length: 1,
+        summary: { started_count: 1, completed_count: 1, puzzles_solved: 5, sprint_total_duration_seconds: 120 },
+        series: [],
+      })
+    })
     await page.goto('/dashboard')
 
-    await expect(page.getByRole('heading', { name: 'Welcome back!' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Puzzle Sprint' })).toBeVisible()
     await expect(page.getByText('Daily Streak: 4')).toBeVisible()
-    await expect(page.getByRole('link', { name: /^Game Review Analyze your/ })).toBeVisible()
-    await expect(page.getByRole('link', { name: /^Review Queue Practice due/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Add Run' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'How Sprint Works' })).toBeVisible()
     await attachScreenshot(page, testInfo, 'dashboard-v2-loaded')
     expect(bootstrapRequests.length).toBeGreaterThan(0)
     expect(attemptStatsRequests).toHaveLength(1)
@@ -123,7 +132,7 @@ test.describe('Migrated v2 signed-in read routes', () => {
 
     await page.goto('/game-review')
 
-    await expect(page.getByRole('heading', { name: 'Game Review & Analysis' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Game Analysis' })).toBeVisible()
     await expect(page.getByText('Analysis Ready')).toBeVisible()
     await expect(page.getByText('Opponent Mistake Recognition')).toBeVisible()
     const mistakesPerGameCard = page
@@ -177,7 +186,7 @@ test.describe('Migrated v2 signed-in read routes', () => {
 
     await page.goto('/game-review')
 
-    await expect(page.getByRole('heading', { name: 'Game Review & Analysis' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Game Analysis' })).toBeVisible()
     await expect(page.getByText('Game Import Pending')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Start Import' })).toBeVisible()
     await attachScreenshot(page, testInfo, 'game-review-import-ready')
@@ -241,16 +250,21 @@ test.describe('Migrated v2 signed-in read routes', () => {
       await fulfillJSON(route, reviewQueueAttemptResponse())
     })
 
+    await page.route('**/api/v2/me/stats/attempts**', async (route) => {
+      await fulfillJSON(route, dashboardAttemptStatsResponse())
+    })
     await page.goto('/review-queue?mode=arrow_duel&puzzle_source=user_game&theme_groups=missed_attack')
 
-    await expect(page.getByRole('heading', { name: 'Review Queue', level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Review', level: 1 })).toBeVisible()
+    await expect(page.getByText("Today's Review Progress")).toBeVisible()
     await expect(page.getByLabel('Source')).toHaveValue('user_game')
     await expect(page.getByText('Showing 1-1 of 1')).toBeVisible()
     await expect(page.getByText('2 due now')).toBeVisible()
     await page.getByRole('button', { name: 'Start Review' }).click()
     await expect(page.getByText('Review Session')).toBeVisible()
-    await page.getByRole('button', { name: 'Choose e2e4' }).click()
-    await expect(page.getByText('Status: Scheduled')).toBeVisible()
+    // Pick candidate move e2e4 directly on the chessboard (no side buttons!)
+    await page.locator('[data-square="e4"]').click()
+    await expect(page.getByText('Review Complete')).toBeVisible()
     await attachScreenshot(page, testInfo, 'review-queue-v2-loaded')
     await expectNoHorizontalOverflow(page)
 
@@ -282,11 +296,12 @@ test.describe('Migrated v2 signed-in read routes', () => {
         puzzle_source: 'user_game',
         puzzle_id: 'drawn-review-puzzle',
         mode: 'arrow_duel',
-        candidate_moves: ['e2e3', 'e2e4'],
         chosen_move: 'e2e4',
         was_correct: true,
       }],
     })
+    const submittedCandidates = (attemptBodies[0] as { attempts: Array<{ candidate_moves: string[] }> }).attempts[0].candidate_moves
+    expect([...submittedCandidates].sort()).toEqual(['e2e3', 'e2e4'])
     expect(legacyRequests).toEqual([])
   })
 
@@ -306,7 +321,7 @@ test.describe('Migrated v2 signed-in read routes', () => {
 
     await page.goto('/review-queue?mode=arrow_duel&puzzle_source=lichess&due=all&theme_groups=missed_attack')
 
-    await expect(page.getByRole('heading', { name: 'Review Queue', level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Review', level: 1 })).toBeVisible()
     await expect(page.getByLabel('Mode')).toHaveValue('arrow_duel')
     await expect(page.getByLabel('Source')).toHaveValue('lichess')
     await expect(page.getByLabel('Due')).toHaveValue('all')
@@ -360,7 +375,7 @@ test.describe('Migrated v2 signed-in read routes', () => {
 
     await page.goto('/review-queue?mode=arrow_duel&puzzle_source=user_game&theme_groups=missed_attack')
 
-    await expect(page.getByRole('heading', { name: 'Review Queue', level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Review', level: 1 })).toBeVisible()
     await expect(page.getByLabel('Source')).toHaveValue('user_game')
     await expect(page.getByText('Showing 1-1 of 1')).toBeVisible()
     await page.getByRole('button', { name: 'Start Review' }).click()
@@ -391,6 +406,51 @@ test.describe('Migrated v2 signed-in read routes', () => {
         body: { reason: 'not_relevant' },
       },
     ])
+    expect(legacyRequests).toEqual([])
+  })
+
+  test('renders Puzzle History from v2 attempts endpoint and opens position analyzer', async ({ page }, testInfo) => {
+    const legacyRequests = collectLegacyRequests(page)
+    await page.route('**/api/v2/me/attempts**', async (route) => {
+      await fulfillJSON(route, {
+        attempts: [
+          {
+            attempt_id: 'hist-1',
+            puzzle_source: 'lichess',
+            puzzle_id: 'lichess-1',
+            mode: 'regular',
+            context: 'sprint',
+            was_correct: false,
+            user_moves: ['f1c4'],
+            time_taken_ms: 4200,
+            attempted_at: now,
+            fen: 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3',
+            solution_moves: ['f1b5', 'a7a6'],
+            rating: 1450,
+            themes: ['pin'],
+          },
+        ],
+        total_count: 1,
+        offset: 0,
+        limit: 50,
+      })
+    })
+
+    await page.goto('/history')
+    await expect(page.getByRole('heading', { name: 'Puzzle History', level: 1 })).toBeVisible()
+    await expect(page.getByText('Regular Puzzle')).toBeVisible()
+    await expect(page.getByText('Elo 1450')).toBeVisible()
+    await attachScreenshot(page, testInfo, 'history-v2-loaded')
+
+    // Opening a history item enters free-solve practice mode first, then Analyze opens Stockfish
+    await page.getByText('Regular Puzzle').click()
+    await expect(page.getByRole('button', { name: 'Analyze' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Reset' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Back to Practice' })).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Analyze' }).click()
+    await expect(page.getByRole('button', { name: 'Back to Practice' })).toBeVisible()
+    await expectNoHorizontalOverflow(page)
     expect(legacyRequests).toEqual([])
   })
 })

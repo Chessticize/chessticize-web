@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts"
-import { Calendar, TrendingUp, TrendingDown } from "lucide-react"
+import { Calendar, TrendingUp, BarChart3 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { GameReviewData } from "@/hooks/useGameReviewData"
 
@@ -16,14 +16,14 @@ interface WeeklyTrendCardProps {
 export function WeeklyTrendCard({
   data,
   isLoading = false,
-  className
+  className,
 }: WeeklyTrendCardProps) {
   if (isLoading) {
     return (
-      <Card className={cn("border-blue-200 bg-blue-50", className)}>
+      <Card className={cn("border-slate-200 bg-white shadow-sm", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center space-x-2 text-blue-800">
-            <Calendar className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+            <Calendar className="h-4 w-4 text-slate-500" />
             <span>Weekly Trends</span>
           </CardTitle>
         </CardHeader>
@@ -40,7 +40,6 @@ export function WeeklyTrendCard({
     )
   }
 
-  // Process recognition rate data
   const recognitionData = data?.opponentMistakesTimeSeries?.nodes?.map(node => {
     let caught = 0
     let missed = 0
@@ -59,17 +58,16 @@ export function WeeklyTrendCard({
     const date = new Date(node.start_time)
     const label = date.toLocaleDateString('en-US', {
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     })
 
     return {
       week: label,
       recognitionRate: rate,
-      label: `Week of ${label}`
+      label: `Week of ${label}`,
     }
   }) || []
 
-  // Process mistakes per game data
   const mistakesData = data?.myMistakesTimeSeries?.nodes?.map(node => {
     const totalMistakes = node.stats.total_count || 0
     const totalGames = node.stats.unique_game_count || 0
@@ -78,29 +76,29 @@ export function WeeklyTrendCard({
     const date = new Date(node.start_time)
     const label = date.toLocaleDateString('en-US', {
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     })
 
     return {
       week: label,
-      mistakesPerGame: mistakesPerGame,
-      label: `Week of ${label}`
+      mistakesPerGame,
+      label: `Week of ${label}`,
     }
   }) || []
 
   if (!recognitionData.length && !mistakesData.length) {
     return (
-      <Card className={cn("border-blue-200 bg-blue-50", className)}>
+      <Card className={cn("border-slate-200 bg-white shadow-sm", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center space-x-2 text-blue-800">
-            <Calendar className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+            <Calendar className="h-4 w-4 text-slate-500" />
             <span>Weekly Trends</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-32 flex items-center justify-center text-gray-500">
-            <div className="text-center">
-              <div className="text-2xl mb-1">📊</div>
+          <div className="h-32 flex items-center justify-center text-slate-500">
+            <div className="flex flex-col items-center text-center">
+              <BarChart3 className="h-5 w-5 text-slate-300 mb-2" />
               <p className="text-sm">No trend data yet</p>
             </div>
           </div>
@@ -113,21 +111,20 @@ export function WeeklyTrendCard({
     ? recognitionData.map(item => ({ ...item, rate: item.recognitionRate }))
     : mistakesData.map(item => ({ ...item, rate: item.mistakesPerGame }))
 
-  // Calculate trend direction
   const getTrend = () => {
     if (chartData.length < 2) return { direction: 'stable', change: 0 }
-    
-    const recent = chartData.slice(-4) // Last 4 weeks
+
+    const recent = chartData.slice(-4)
     if (recent.length < 2) return { direction: 'stable', change: 0 }
-    
+
     const firstHalf = recent.slice(0, Math.floor(recent.length / 2))
     const secondHalf = recent.slice(Math.floor(recent.length / 2))
-    
+
     const firstAvg = firstHalf.reduce((sum, d) => sum + d.rate, 0) / firstHalf.length
     const secondAvg = secondHalf.reduce((sum, d) => sum + d.rate, 0) / secondHalf.length
-    
+
     const change = secondAvg - firstAvg
-    
+
     if (Math.abs(change) < 2) return { direction: 'stable', change }
     return { direction: change > 0 ? 'improving' : 'declining', change }
   }
@@ -136,14 +133,13 @@ export function WeeklyTrendCard({
   const currentRate = chartData.length > 0 ? chartData[chartData.length - 1].rate : 0
   const bestRate = chartData.length > 0 ? Math.max(...chartData.map(d => d.rate)) : 0
 
-  // Custom tooltip for the chart
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 border border-blue-200 rounded-lg shadow-lg">
-          <p className="text-sm font-medium text-blue-900">{label}</p>
-          <p className="text-sm text-blue-700">
-            Recognition Rate: {payload[0].value.toFixed(1)}%
+        <div className="bg-white p-3 border border-slate-200 rounded-lg shadow-sm">
+          <p className="text-sm font-medium text-slate-900">{label}</p>
+          <p className="text-sm text-slate-600 tabular-nums">
+            Recognition Rate: <span className="font-semibold text-slate-900">{payload[0].value.toFixed(1)}%</span>
           </p>
         </div>
       )
@@ -152,32 +148,31 @@ export function WeeklyTrendCard({
   }
 
   return (
-    <Card className={cn("border-blue-200 bg-blue-50", className)}>
+    <Card className={cn("border-slate-200 bg-white shadow-sm", className)}>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center space-x-2 text-blue-800">
-          <Calendar className="h-5 w-5" />
+        <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+          <Calendar className="h-4 w-4 text-slate-500" />
           <span>Weekly Recognition Trend</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* Mini chart */}
           <div className="h-32">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
-                <XAxis 
-                  dataKey="week" 
+                <XAxis
+                  dataKey="week"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 10, fill: '#1e40af' }}
+                  tick={{ fontSize: 11, fill: '#64748b' }}
                   interval="preserveStartEnd"
                 />
                 <YAxis hide />
                 <Tooltip content={<CustomTooltip />} />
-                <Line 
-                  type="monotone" 
-                  dataKey="rate" 
-                  stroke="#2563eb" 
+                <Line
+                  type="monotone"
+                  dataKey="rate"
+                  stroke="#2563eb"
                   strokeWidth={2}
                   dot={{ fill: '#2563eb', strokeWidth: 2, r: 3 }}
                   activeDot={{ r: 4, fill: '#1d4ed8' }}
@@ -185,28 +180,27 @@ export function WeeklyTrendCard({
               </LineChart>
             </ResponsiveContainer>
           </div>
-          
-          {/* Summary stats */}
-          <div className="grid grid-cols-3 gap-2 text-sm">
+
+          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 text-sm">
             <div className="text-center">
-              <div className="font-semibold text-blue-900">{currentRate.toFixed(1)}%</div>
-              <div className="text-blue-700">Current</div>
+              <div className="font-semibold tabular-nums text-slate-900">{currentRate.toFixed(1)}%</div>
+              <div className="text-xs text-slate-500">Current</div>
             </div>
             <div className="text-center">
-              <div className="font-semibold text-blue-900">{bestRate.toFixed(1)}%</div>
-              <div className="text-blue-700">Best</div>
+              <div className="font-semibold tabular-nums text-slate-900">{bestRate.toFixed(1)}%</div>
+              <div className="text-xs text-slate-500">Best</div>
             </div>
             <div className="text-center">
               <div className={cn(
-                "font-semibold flex items-center justify-center space-x-1",
-                trend.direction === 'improving' && "text-green-700",
-                trend.direction === 'declining' && "text-red-700",
-                trend.direction === 'stable' && "text-gray-700"
+                "font-semibold flex items-center justify-center gap-1",
+                trend.direction === 'improving' && "text-emerald-600",
+                trend.direction === 'declining' && "text-rose-600",
+                trend.direction === 'stable' && "text-slate-600"
               )}>
-                {trend.direction === 'improving' && <TrendingUp className="h-3 w-3" />}
+                {trend.direction === 'improving' && <TrendingUp className="h-3.5 w-3.5" />}
                 <span className="capitalize">{trend.direction}</span>
               </div>
-              <div className="text-blue-700">Trend</div>
+              <div className="text-xs text-slate-500">Trend</div>
             </div>
           </div>
         </div>

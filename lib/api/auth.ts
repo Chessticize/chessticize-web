@@ -10,9 +10,11 @@ import {
   CreateChessProfileRequest,
   CreateChessProfileResponse
 } from '../auth/types'
+import type { UserPreferences } from './preferences'
 
 interface V2BootstrapResponse {
   user: V2BootstrapUser
+  preferences?: UserPreferences
   profiles?: V2ChessProfile[]
   elos?: UserElo[]
 }
@@ -170,7 +172,8 @@ function normalizeV2Bootstrap(body: V2BootstrapResponse): User {
     updated_at: updatedAt,
     last_sign_in_at: body.user.last_sign_in_at || '',
     elos: body.elos || [],
-    chess_profiles: (body.profiles || []).map((profile) => normalizeV2ChessProfile(profile))
+    chess_profiles: (body.profiles || []).map((profile) => normalizeV2ChessProfile(profile)),
+    preferences: body.preferences || {},
   }
 }
 

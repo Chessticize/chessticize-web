@@ -1,5 +1,3 @@
-"use client"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
@@ -7,17 +5,13 @@ import { ArrowLeft } from "lucide-react"
 export default function PrivacyPolicy() {
   const effectiveDate = "January 1, 2024"
 
-  const scrollToSection = (sectionId: string) => {
-    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' })
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         <div className="mb-8">
           <Link
             href="/auth"
-            className="inline-flex items-center text-orange-600 hover:text-orange-700 font-medium transition-colors"
+            className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium transition-colors"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Sign In
@@ -27,9 +21,9 @@ export default function PrivacyPolicy() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Table of Contents - Desktop Sidebar */}
           <div className="lg:col-span-1">
-            <Card className="sticky top-8">
+            <Card className="sticky top-8 border-slate-200">
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg text-orange-600">Table of Contents</CardTitle>
+                <CardTitle className="text-base font-semibold text-slate-900">Table of Contents</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <nav className="space-y-1">
@@ -49,13 +43,13 @@ export default function PrivacyPolicy() {
                     { id: 'changes', title: '13. Policy Changes' },
                     { id: 'contact', title: '14. Contact Information' }
                   ].map((item) => (
-                    <button
+                    <a
                       key={item.id}
-                      onClick={() => scrollToSection(item.id)}
-                      className="block w-full text-left text-sm text-gray-600 hover:text-orange-600 py-1 px-2 rounded hover:bg-orange-50 transition-colors"
+                      href={`#${item.id}`}
+                      className="block w-full text-left text-sm text-slate-600 hover:text-blue-600 py-1 px-2 rounded hover:bg-blue-50 transition-colors"
                     >
                       {item.title}
-                    </button>
+                    </a>
                   ))}
                 </nav>
               </CardContent>
@@ -64,9 +58,9 @@ export default function PrivacyPolicy() {
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            <Card>
-              <CardHeader className="border-b border-gray-200">
-                <CardTitle className="text-4xl font-bold text-orange-600 mb-2">Privacy Policy</CardTitle>
+            <Card className="border-slate-200">
+              <CardHeader className="border-b border-slate-200">
+                <CardTitle className="text-3xl font-semibold tracking-tight text-slate-900 mb-2">Privacy Policy</CardTitle>
                 <div className="space-y-1">
                   <p className="text-gray-600">
                     <strong>Effective Date:</strong> {effectiveDate}
@@ -193,24 +187,24 @@ export default function PrivacyPolicy() {
                       <p>If you are located in the European Economic Area (EEA), our legal basis for collecting and using your personal information depends on the specific context:</p>
 
                       <div className="space-y-4">
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <h4 className="font-semibold text-blue-900 mb-2">Contract Performance</h4>
-                          <p className="text-blue-800 text-sm">We process your data to provide our services as outlined in our Terms of Service.</p>
+                        <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                          <h4 className="font-semibold text-slate-900 mb-2">Contract Performance</h4>
+                          <p className="text-slate-600 text-sm">We process your data to provide our services as outlined in our Terms of Service.</p>
                         </div>
 
-                        <div className="bg-green-50 p-4 rounded-lg">
-                          <h4 className="font-semibold text-green-900 mb-2">Legitimate Interests</h4>
-                          <p className="text-green-800 text-sm">We process data to improve our services and ensure security, balanced against your privacy rights.</p>
+                        <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                          <h4 className="font-semibold text-slate-900 mb-2">Legitimate Interests</h4>
+                          <p className="text-slate-600 text-sm">We process data to improve our services and ensure security, balanced against your privacy rights.</p>
                         </div>
 
-                        <div className="bg-purple-50 p-4 rounded-lg">
-                          <h4 className="font-semibold text-purple-900 mb-2">Consent</h4>
-                          <p className="text-purple-800 text-sm">For marketing communications and optional features, we rely on your explicit consent.</p>
+                        <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                          <h4 className="font-semibold text-slate-900 mb-2">Consent</h4>
+                          <p className="text-slate-600 text-sm">For marketing communications and optional features, we rely on your explicit consent.</p>
                         </div>
 
-                        <div className="bg-orange-50 p-4 rounded-lg">
-                          <h4 className="font-semibold text-orange-900 mb-2">Legal Compliance</h4>
-                          <p className="text-orange-800 text-sm">We may process data to comply with legal obligations or respond to lawful requests.</p>
+                        <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                          <h4 className="font-semibold text-slate-900 mb-2">Legal Compliance</h4>
+                          <p className="text-slate-600 text-sm">We may process data to comply with legal obligations or respond to lawful requests.</p>
                         </div>
                       </div>
                     </div>
@@ -332,42 +326,42 @@ export default function PrivacyPolicy() {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-3">
-                          <div className="border-l-4 border-orange-500 pl-4">
-                            <h4 className="font-semibold text-gray-800">Access</h4>
-                            <p className="text-sm">Request a copy of your personal data</p>
+                          <div className="border-l-2 border-slate-300 pl-4">
+                            <h4 className="font-semibold text-slate-900">Access</h4>
+                            <p className="text-sm text-slate-600">Request a copy of your personal data</p>
                           </div>
 
-                          <div className="border-l-4 border-blue-500 pl-4">
-                            <h4 className="font-semibold text-gray-800">Rectification</h4>
-                            <p className="text-sm">Correct inaccurate or incomplete data</p>
+                          <div className="border-l-2 border-slate-300 pl-4">
+                            <h4 className="font-semibold text-slate-900">Rectification</h4>
+                            <p className="text-sm text-slate-600">Correct inaccurate or incomplete data</p>
                           </div>
 
-                          <div className="border-l-4 border-red-500 pl-4">
-                            <h4 className="font-semibold text-gray-800">Erasure</h4>
-                            <p className="text-sm">Request deletion of your personal data</p>
+                          <div className="border-l-2 border-slate-300 pl-4">
+                            <h4 className="font-semibold text-slate-900">Erasure</h4>
+                            <p className="text-sm text-slate-600">Request deletion of your personal data</p>
                           </div>
                         </div>
 
                         <div className="space-y-3">
-                          <div className="border-l-4 border-green-500 pl-4">
-                            <h4 className="font-semibold text-gray-800">Portability</h4>
-                            <p className="text-sm">Export your data in a structured format</p>
+                          <div className="border-l-2 border-slate-300 pl-4">
+                            <h4 className="font-semibold text-slate-900">Portability</h4>
+                            <p className="text-sm text-slate-600">Export your data in a structured format</p>
                           </div>
 
-                          <div className="border-l-4 border-purple-500 pl-4">
-                            <h4 className="font-semibold text-gray-800">Restriction</h4>
-                            <p className="text-sm">Limit how we process your data</p>
+                          <div className="border-l-2 border-slate-300 pl-4">
+                            <h4 className="font-semibold text-slate-900">Restriction</h4>
+                            <p className="text-sm text-slate-600">Limit how we process your data</p>
                           </div>
 
-                          <div className="border-l-4 border-yellow-500 pl-4">
-                            <h4 className="font-semibold text-gray-800">Objection</h4>
-                            <p className="text-sm">Object to certain types of processing</p>
+                          <div className="border-l-2 border-slate-300 pl-4">
+                            <h4 className="font-semibold text-slate-900">Objection</h4>
+                            <p className="text-sm text-slate-600">Object to certain types of processing</p>
                           </div>
                         </div>
                       </div>
 
-                      <div className="bg-orange-50 p-4 rounded-lg">
-                        <p className="text-sm">
+                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                        <p className="text-sm text-slate-700">
                           <strong>How to Exercise Your Rights:</strong> Contact us at support@chessticize.com with your request. We will respond within 30 days and may require identity verification.
                         </p>
                       </div>
@@ -375,24 +369,22 @@ export default function PrivacyPolicy() {
                   </section>
 
                   <section id="cookies" className="scroll-mt-8">
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
+                    <h2 className="text-2xl font-semibold text-slate-900 mb-4 border-b border-slate-200 pb-2">
                       9. Cookies and Tracking Technologies
                     </h2>
-                    <div className="space-y-4 text-gray-700 leading-relaxed">
+                    <div className="space-y-4 text-slate-700 leading-relaxed">
                       <p>We use only essential and functional cookies to run the site. We do not use analytics cookies or third-party tracking.</p>
 
                       <div className="space-y-4">
-                        <div className="bg-green-50 p-4 rounded-lg">
-                          <h4 className="font-semibold text-green-900 mb-2">Essential Cookies</h4>
-                          <p className="text-green-800 text-sm">Required for authentication, security, and basic functionality. These cannot be disabled.</p>
+                        <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                          <h4 className="font-semibold text-slate-900 mb-2">Essential Cookies</h4>
+                          <p className="text-slate-600 text-sm">Required for authentication, security, and basic functionality. These cannot be disabled.</p>
                         </div>
 
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <h4 className="font-semibold text-blue-900 mb-2">Functional Cookies</h4>
-                          <p className="text-blue-800 text-sm">Remember your preferences and settings to improve your experience.</p>
+                        <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                          <h4 className="font-semibold text-slate-900 mb-2">Functional Cookies</h4>
+                          <p className="text-slate-600 text-sm">Remember your preferences and settings to improve your experience.</p>
                         </div>
-
-
                       </div>
 
                       <p className="text-sm">
@@ -402,10 +394,10 @@ export default function PrivacyPolicy() {
                   </section>
 
                   <section id="international" className="scroll-mt-8">
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
+                    <h2 className="text-2xl font-semibold text-slate-900 mb-4 border-b border-slate-200 pb-2">
                       10. International Data Transfers
                     </h2>
-                    <div className="space-y-4 text-gray-700 leading-relaxed">
+                    <div className="space-y-4 text-slate-700 leading-relaxed">
                       <p>
                         Your information may be transferred to and processed in countries other than your own. We ensure appropriate safeguards are in place:
                       </p>
@@ -417,23 +409,23 @@ export default function PrivacyPolicy() {
                         <li>Binding corporate rules for intra-group transfers</li>
                       </ul>
 
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-slate-600">
                         We will only transfer your data to countries or organizations that provide an adequate level of protection for your personal information.
                       </p>
                     </div>
                   </section>
 
                   <section id="children" className="scroll-mt-8">
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
+                    <h2 className="text-2xl font-semibold text-slate-900 mb-4 border-b border-slate-200 pb-2">
                       11. Children's Privacy
                     </h2>
-                    <div className="space-y-4 text-gray-700 leading-relaxed">
+                    <div className="space-y-4 text-slate-700 leading-relaxed">
                       <p>
                         Our Service is not intended for children under the age of 13. We do not knowingly collect personal information from children under 13 without parental consent.
                       </p>
 
-                      <div className="bg-yellow-50 p-4 rounded-lg">
-                        <p className="text-yellow-800 text-sm">
+                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                        <p className="text-slate-700 text-sm">
                           <strong>If you are a parent or guardian</strong> and believe your child has provided us with personal information, please contact us immediately. We will take steps to remove such information from our systems.
                         </p>
                       </div>
@@ -445,27 +437,27 @@ export default function PrivacyPolicy() {
                   </section>
 
                   <section id="third-party" className="scroll-mt-8">
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
+                    <h2 className="text-2xl font-semibold text-slate-900 mb-4 border-b border-slate-200 pb-2">
                       12. Third-Party Services
                     </h2>
-                    <div className="space-y-4 text-gray-700 leading-relaxed">
+                    <div className="space-y-4 text-slate-700 leading-relaxed">
                       <p>Our Service may integrate with third-party services:</p>
 
                       <div className="space-y-3">
-                        <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded">
-                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                          <span className="font-medium">Chess.com API</span>
-                          <span className="text-sm text-gray-600">- Game data analysis</span>
+                        <div className="flex items-center space-x-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                          <div className="w-2 h-2 bg-slate-500 rounded-full" />
+                          <span className="font-medium text-slate-900">Chess.com API</span>
+                          <span className="text-sm text-slate-600">- Game data analysis</span>
                         </div>
-                        <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span className="font-medium">Lichess API</span>
-                          <span className="text-sm text-gray-600">- Game data analysis</span>
+                        <div className="flex items-center space-x-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                          <div className="w-2 h-2 bg-slate-500 rounded-full" />
+                          <span className="font-medium text-slate-900">Lichess API</span>
+                          <span className="text-sm text-slate-600">- Game data analysis</span>
                         </div>
-                        <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          <span className="font-medium">Google OAuth</span>
-                          <span className="text-sm text-gray-600">- Authentication service</span>
+                        <div className="flex items-center space-x-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                          <div className="w-2 h-2 bg-blue-600 rounded-full" />
+                          <span className="font-medium text-slate-900">Google OAuth</span>
+                          <span className="text-sm text-slate-600">- Authentication service</span>
                         </div>
                       </div>
 

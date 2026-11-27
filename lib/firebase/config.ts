@@ -28,16 +28,41 @@ if (typeof window !== 'undefined') {
   })
 }
 
+function resolveFirebaseAuthDomain(): string {
+  if (
+    env.NEXT_PUBLIC_FIREBASE_USE_SAME_ORIGIN_AUTH_DOMAIN &&
+    typeof window !== 'undefined' &&
+    window.location.protocol === 'https:' &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1'
+  ) {
+    return window.location.host
+  }
+  return env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+}
+
 // Firebase configuration object
 export const firebaseConfig = {
   apiKey: env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  // When using emulator, still use the production authDomain for OAuth redirects
-  authDomain: env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  // When using same-origin auth proxy, use the active HTTPS host to avoid iOS/Safari storage partitioning
+  authDomain: resolveFirebaseAuthDomain(),
   projectId: env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: env.NEXT_PUBLIC_FIREBASE_APP_ID,
   measurementId: env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID, // Optional for Analytics
+}
+
+export function isUsingSameOriginAuthDomain(): boolean {
+  if (typeof window === 'undefined') return false
+  if (window.location.protocol !== 'https:') return false
+  if (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  ) {
+    return false
+  }
+  return Boolean(firebaseConfig.authDomain) && firebaseConfig.authDomain === window.location.host
 }
 
 // Check if Firebase configuration is complete

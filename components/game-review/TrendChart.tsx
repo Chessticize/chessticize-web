@@ -3,8 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, AreaChart, Area } from "recharts"
-import { LucideIcon, TrendingUp } from "lucide-react"
+import { LineChart, Line, XAxis, YAxis, AreaChart, Area } from "recharts"
+import { LucideIcon, TrendingUp, TrendingDown, Minus } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export interface TrendChartProps {
@@ -25,35 +25,30 @@ export interface TrendChartProps {
 
 const colorSchemes = {
   green: {
-    card: 'border-green-200 bg-green-50',
-    title: 'text-green-800',
-    stroke: '#16a34a',
-    fill: '#16a34a20'
+    icon: 'text-emerald-600',
+    stroke: '#059669',
+    fill: '#0596691f',
   },
   blue: {
-    card: 'border-blue-200 bg-blue-50',
-    title: 'text-blue-800',
+    icon: 'text-blue-600',
     stroke: '#2563eb',
-    fill: '#2563eb20'
+    fill: '#2563eb1f',
   },
   purple: {
-    card: 'border-purple-200 bg-purple-50',
-    title: 'text-purple-800',
-    stroke: '#9333ea',
-    fill: '#9333ea20'
+    icon: 'text-slate-600',
+    stroke: '#475569',
+    fill: '#4755691f',
   },
   orange: {
-    card: 'border-orange-200 bg-orange-50',
-    title: 'text-orange-800',
-    stroke: '#ea580c',
-    fill: '#ea580c20'
+    icon: 'text-amber-600',
+    stroke: '#d97706',
+    fill: '#d977061f',
   },
   gray: {
-    card: 'border-gray-200 bg-gray-50',
-    title: 'text-gray-800',
-    stroke: '#6b7280',
-    fill: '#6b728020'
-  }
+    icon: 'text-slate-500',
+    stroke: '#64748b',
+    fill: '#64748b1f',
+  },
 }
 
 const chartConfig = {
@@ -72,20 +67,21 @@ export function TrendChart({
   isLoading = false,
   className,
   formatValue = (value) => value.toString(),
-  showTrend = true
+  showTrend = true,
 }: TrendChartProps) {
   const colors = colorSchemes[colorScheme]
 
-  // Calculate trend
-  const trend = showTrend && data.length >= 2 ? 
-    ((data[data.length - 1]?.value || 0) - (data[0]?.value || 0)) / (data[0]?.value || 1) * 100 : 0
+  const trend =
+    showTrend && data.length >= 2
+      ? (((data[data.length - 1]?.value || 0) - (data[0]?.value || 0)) / (data[0]?.value || 1)) * 100
+      : 0
 
   if (isLoading) {
     return (
-      <Card className={cn(colors.card, 'transition-all duration-300', className)}>
+      <Card className={cn('border-slate-200 bg-white shadow-sm', className)}>
         <CardHeader className="pb-3">
-          <CardTitle className={cn('flex items-center space-x-2', colors.title)}>
-            <Icon className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+            <Icon className={cn('h-4 w-4', colors.icon)} />
             <Skeleton className="h-5 w-32" />
           </CardTitle>
         </CardHeader>
@@ -101,18 +97,18 @@ export function TrendChart({
 
   if (!data || data.length === 0) {
     return (
-      <Card className={cn(colors.card, 'transition-all duration-300', className)}>
+      <Card className={cn('border-slate-200 bg-white shadow-sm', className)}>
         <CardHeader className="pb-3">
-          <CardTitle className={cn('flex items-center space-x-2', colors.title)}>
-            <Icon className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900">
+            <Icon className={cn('h-4 w-4', colors.icon)} />
             <span>{title}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-48 text-gray-500">
-            <div className="text-center">
-              <Icon className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No data available</p>
+          <div className="flex items-center justify-center h-48 text-slate-500">
+            <div className="flex flex-col items-center text-center">
+              <Icon className="h-8 w-8 mb-2 text-slate-300" />
+              <p className="text-sm">No data available</p>
             </div>
           </div>
         </CardContent>
@@ -121,19 +117,27 @@ export function TrendChart({
   }
 
   return (
-    <Card className={cn(colors.card, 'transition-all duration-300 hover:shadow-md', className)}>
+    <Card className={cn('border-slate-200 bg-white shadow-sm transition-colors hover:border-slate-300', className)}>
       <CardHeader className="pb-3">
-        <CardTitle className={cn('flex items-center justify-between', colors.title)}>
-          <div className="flex items-center space-x-2">
-            <Icon className="h-5 w-5" />
+        <CardTitle className="flex items-center justify-between text-base font-semibold tracking-tight text-slate-900">
+          <div className="flex items-center gap-2">
+            <Icon className={cn('h-4 w-4', colors.icon)} />
             <span>{title}</span>
           </div>
           {showTrend && (
-            <div className={cn(
-              'text-sm flex items-center space-x-1',
-              trend > 0 ? 'text-green-600' : trend < 0 ? 'text-red-600' : 'text-gray-600'
-            )}>
-              <span>{trend > 0 ? '↗' : trend < 0 ? '↘' : '→'}</span>
+            <div
+              className={cn(
+                'text-sm font-medium tabular-nums flex items-center gap-1',
+                trend > 0 ? 'text-emerald-600' : trend < 0 ? 'text-rose-600' : 'text-slate-500'
+              )}
+            >
+              {trend > 0 ? (
+                <TrendingUp className="h-3.5 w-3.5" />
+              ) : trend < 0 ? (
+                <TrendingDown className="h-3.5 w-3.5" />
+              ) : (
+                <Minus className="h-3.5 w-3.5" />
+              )}
               <span>{Math.abs(trend).toFixed(1)}%</span>
             </div>
           )}
@@ -143,8 +147,8 @@ export function TrendChart({
         <ChartContainer config={chartConfig} className="h-48 w-full">
           {chartType === 'area' ? (
             <AreaChart data={data}>
-              <XAxis 
-                dataKey="date" 
+              <XAxis
+                dataKey="date"
                 tickFormatter={(value) => {
                   const date = new Date(value)
                   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -152,23 +156,21 @@ export function TrendChart({
                 fontSize={12}
                 tickMargin={8}
               />
-              <YAxis 
-                tickFormatter={formatValue}
-                fontSize={12}
-                tickMargin={8}
-              />
-              <ChartTooltip 
-                content={<ChartTooltipContent 
-                  labelFormatter={(value) => {
-                    const date = new Date(value)
-                    return date.toLocaleDateString('en-US', { 
-                      weekday: 'short',
-                      month: 'short', 
-                      day: 'numeric' 
-                    })
-                  }}
-                  formatter={(value) => [formatValue(Number(value)), 'Value']}
-                />} 
+              <YAxis tickFormatter={formatValue} fontSize={12} tickMargin={8} />
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    labelFormatter={(value) => {
+                      const date = new Date(value)
+                      return date.toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                      })
+                    }}
+                    formatter={(value) => [formatValue(Number(value)), 'Value']}
+                  />
+                }
               />
               <Area
                 type="monotone"
@@ -182,8 +184,8 @@ export function TrendChart({
             </AreaChart>
           ) : (
             <LineChart data={data}>
-              <XAxis 
-                dataKey="date" 
+              <XAxis
+                dataKey="date"
                 tickFormatter={(value) => {
                   const date = new Date(value)
                   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -191,23 +193,21 @@ export function TrendChart({
                 fontSize={12}
                 tickMargin={8}
               />
-              <YAxis 
-                tickFormatter={formatValue}
-                fontSize={12}
-                tickMargin={8}
-              />
-              <ChartTooltip 
-                content={<ChartTooltipContent 
-                  labelFormatter={(value) => {
-                    const date = new Date(value)
-                    return date.toLocaleDateString('en-US', { 
-                      weekday: 'short',
-                      month: 'short', 
-                      day: 'numeric' 
-                    })
-                  }}
-                  formatter={(value) => [formatValue(Number(value)), 'Value']}
-                />} 
+              <YAxis tickFormatter={formatValue} fontSize={12} tickMargin={8} />
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    labelFormatter={(value) => {
+                      const date = new Date(value)
+                      return date.toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                      })
+                    }}
+                    formatter={(value) => [formatValue(Number(value)), 'Value']}
+                  />
+                }
               />
               <Line
                 type="monotone"
