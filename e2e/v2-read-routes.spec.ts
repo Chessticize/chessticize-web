@@ -139,7 +139,7 @@ test.describe('Migrated v2 signed-in read routes', () => {
       .locator('div.rounded-lg.border')
       .filter({ hasText: 'My Mistakes Per Game' })
     await expect(mistakesPerGameCard).toBeVisible()
-    await expect(mistakesPerGameCard).toContainText('-1.0')
+    await expect(mistakesPerGameCard).toContainText('-0.5')
     await expect(mistakesPerGameCard).toContainText('Improving')
     await expect(page.getByRole('link', { name: /View My Games/ })).toBeVisible()
     await attachScreenshot(page, testInfo, 'game-review-v2-loaded')
@@ -736,6 +736,14 @@ function gameReviewInsightsResponse() {
         missed_opportunities: 2,
         missed_attacks: 1,
         missed_attack_rate: 0.2,
+      },
+      {
+        start: '2026-06-08T00:00:00Z',
+        end: '2026-06-15T00:00:00Z',
+        games: 8,
+        missed_opportunities: 1,
+        missed_attacks: 1,
+        missed_attack_rate: 0.125,
       },
     ],
     recommended_review: {
