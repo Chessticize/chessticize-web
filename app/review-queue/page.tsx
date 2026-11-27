@@ -58,6 +58,7 @@ const THEME_SCOPE_OPTIONS = [
   { value: "caught_attack", label: "Caught Attack" },
   { value: "own_mistake_punished", label: "Own Mistake Punished" },
   { value: "own_mistake_escaped", label: "Own Mistake Escaped" },
+  { value: "missed_opportunity,missed_attack", label: "Missed Opportunities & Attacks" },
   { value: "missed_attack,own_mistake_punished", label: "My Mistakes" },
 ]
 const VALID_THEME_GROUPS = new Set(
@@ -1027,6 +1028,8 @@ function translateThemeGroup(
       return t("themeGroup.own_mistake_punished")
     case "own_mistake_escaped":
       return t("themeGroup.own_mistake_escaped")
+    case "missed_opportunity,missed_attack":
+      return `${t("themeGroup.missed_opportunity")} & ${t("themeGroup.missed_attack")}`
     case "missed_attack,own_mistake_punished":
       return t("themeGroup.my_mistakes")
     default:

@@ -87,7 +87,7 @@ export function QuickActionsBar({ hasData, className }: QuickActionsBarProps) {
           {/* Practice Buttons Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Practice Missed Opportunities */}
-            <Link href="/review-queue?mode=regular&puzzle_source=user_game&theme_groups=missed_opportunity">
+            <Link href="/review-queue?mode=regular&puzzle_source=user_game&theme_groups=missed_opportunity,missed_attack">
               <Button variant="outline" className="w-full border-slate-200 text-slate-700 hover:bg-slate-50">
                 <AlertTriangle className="h-4 w-4 mr-2 text-amber-600" />
                 {t("gameReview.practiceMissedOpportunities")}
@@ -95,7 +95,7 @@ export function QuickActionsBar({ hasData, className }: QuickActionsBarProps) {
             </Link>
 
             {/* Practice My Mistakes */}
-            <Link href="/review-queue?mode=arrow_duel&puzzle_source=user_game&theme_groups=missed_attack,own_mistake_punished">
+            <Link href="/review-queue?mode=arrow_duel&puzzle_source=user_game&theme_groups=own_mistake_punished">
               <Button variant="outline" className="w-full border-slate-200 text-slate-700 hover:bg-slate-50">
                 <Brain className="h-4 w-4 mr-2 text-blue-600" />
                 {t("gameReview.practiceMyMistakes")}

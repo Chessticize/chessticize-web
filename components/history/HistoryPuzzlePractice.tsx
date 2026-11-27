@@ -61,7 +61,15 @@ function resolveCorrectMove(
   if (attempt.correct_move) return attempt.correct_move
   const bestCandidate = attempt.candidate_moves?.find((c) => c.kind === "best")?.move
   if (bestCandidate) return bestCandidate
-  return candidateMoves?.[0]
+  if (candidateMoves && attempt.chosen_move) {
+    const chosen = attempt.chosen_move.trim().toLowerCase()
+    const match = candidateMoves.find((m) => m.trim().toLowerCase() === chosen)
+    const other = candidateMoves.find((m) => m.trim().toLowerCase() !== chosen)
+    if (match && other) {
+      return attempt.was_correct ? match : other
+    }
+  }
+  return undefined
 }
 
 export function HistoryPuzzlePractice({
