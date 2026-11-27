@@ -35,7 +35,8 @@ export function WeeklyTrendChart({ data }: WeeklyTrendChartProps) {
       })
 
       const total = caught + missed
-      const recognitionRate = total > 0 ? (caught / total) * 100 : 0
+      if (total <= 0) return null
+      const recognitionRate = (caught / total) * 100
 
       const date = new Date(node.start_time)
       const label = date.toLocaleDateString('en-US', {
@@ -49,6 +50,7 @@ export function WeeklyTrendChart({ data }: WeeklyTrendChartProps) {
         caught,
         missed,
         total,
+        timestamp: date.getTime(),
         fullDate: date.toLocaleDateString('en-US', {
           weekday: 'short',
           month: 'short',
@@ -57,7 +59,19 @@ export function WeeklyTrendChart({ data }: WeeklyTrendChartProps) {
         }),
       }
     })
-    .sort((a, b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime())
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+    .sort((a, b) => a.timestamp - b.timestamp)
+
+  if (chartData.length === 0) {
+    return (
+      <div className="h-64 flex items-center justify-center text-slate-500">
+        <div className="flex flex-col items-center text-center">
+          <TrendingUp className="h-6 w-6 text-slate-300 mb-2" />
+          <p className="text-sm">No trend data available</p>
+        </div>
+      </div>
+    )
+  }
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -94,8 +108,12 @@ export function WeeklyTrendChart({ data }: WeeklyTrendChartProps) {
     const firstHalf = recent.slice(0, Math.floor(recent.length / 2))
     const secondHalf = recent.slice(Math.floor(recent.length / 2))
 
-    const firstAvg = firstHalf.reduce((sum, d) => sum + d.recognitionRate, 0) / firstHalf.length
-    const secondAvg = secondHalf.reduce((sum, d) => sum + d.recognitionRate, 0) / secondHalf.length
+    const firstTotal = firstHalf.reduce((sum, d) => sum + d.total, 0)
+    const secondTotal = secondHalf.reduce((sum, d) => sum + d.total, 0)
+    if (firstTotal <= 0 || secondTotal <= 0) return { direction: 'stable', change: 0 }
+
+    const firstAvg = (firstHalf.reduce((sum, d) => sum + d.caught, 0) / firstTotal) * 100
+    const secondAvg = (secondHalf.reduce((sum, d) => sum + d.caught, 0) / secondTotal) * 100
 
     const change = secondAvg - firstAvg
 
@@ -106,7 +124,9 @@ export function WeeklyTrendChart({ data }: WeeklyTrendChartProps) {
   const trend = getTrend()
   const currentRate = chartData.length > 0 ? chartData[chartData.length - 1].recognitionRate : 0
   const bestRate = chartData.length > 0 ? Math.max(...chartData.map(d => d.recognitionRate)) : 0
-  const avgRate = chartData.length > 0 ? chartData.reduce((sum, d) => sum + d.recognitionRate, 0) / chartData.length : 0
+  const totalCaught = chartData.reduce((sum, d) => sum + d.caught, 0)
+  const totalOpportunities = chartData.reduce((sum, d) => sum + d.total, 0)
+  const avgRate = totalOpportunities > 0 ? (totalCaught / totalOpportunities) * 100 : 0
 
   return (
     <div className="space-y-4">

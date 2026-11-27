@@ -69,8 +69,10 @@ describe('useGameReviewData', () => {
     ])
     expect(result.current.data?.opponentMistakesTimeSeries?.nodes).toHaveLength(2)
     expect(result.current.data?.myMistakesTimeSeries?.nodes).toHaveLength(2)
+    expect(result.current.data?.myMistakesTimeSeries?.nodes[0].stats.total_games).toBe(6)
     expect(result.current.data?.summary?.weeklyTrend).toBeCloseTo(25)
-    expect(result.current.data?.summary?.mistakesPerGameTrend).toBeCloseTo(1)
+    // Week 1: 2 mistakes / 6 total games = 1/3; Week 2: 4 mistakes / 6 total games = 2/3; diff = +1/3
+    expect(result.current.data?.summary?.mistakesPerGameTrend).toBeCloseTo(1 / 3)
     expect(mockApiGet).toHaveBeenCalledTimes(1)
     expect(mockApiGet.mock.calls.some(([url]) => {
       const requestedUrl = new URL(url)
@@ -309,6 +311,36 @@ describe('useGameReviewData', () => {
       expect(result.current.error).toBe('server unavailable')
     })
     expect(result.current.data).toBeNull()
+  })
+
+  it('passes time_class to v2 game review insights when provided', async () => {
+    mockUseUserContext.mockReturnValue({
+      user: {
+        id: 'user-1',
+        email: 'user@example.com',
+        registered_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+        last_sign_in_at: '2026-01-01T00:00:00Z',
+        chess_profiles: [
+          profile({ platform: 'lichess.org', username: 'main-user', games_fetched: 20 })
+        ]
+      },
+      isLoading: false,
+      error: null,
+      refreshUser: vi.fn(),
+      updateChessProfiles: vi.fn()
+    })
+    mockApiGet.mockImplementation(async (url: string) => okResponse(v2ResponseForUrl(url)))
+
+    const { result } = renderHook(() => useGameReviewData({ timeClass: 'rapid' }))
+
+    await waitFor(() => {
+      expect(result.current.data?.summary?.totalGamesAnalyzed).toBe(12)
+    })
+
+    const requestedUrl = new URL(mockApiGet.mock.calls[0][0])
+    expect(requestedUrl.searchParams.get('time_class')).toBe('rapid')
+    expect(result.current.data?.timeClass).toBe('rapid')
   })
 })
 

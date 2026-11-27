@@ -19,6 +19,7 @@ const PAGE_SIZE = 20
 const EMPTY_PUZZLE_FILTERS = {
   platform: "",
   username: "",
+  timeClass: "",
   themeGroup: "",
   gamePhase: "",
   tag: "",
@@ -28,17 +29,52 @@ export default function PuzzlesPage() {
   const { user, isLoading: isLoadingUser, error: userError } = useUserContext()
   const [platform, setPlatform] = useState("")
   const [username, setUsername] = useState("")
+  const [timeClass, setTimeClass] = useState("")
   const [themeGroup, setThemeGroup] = useState("")
   const [gamePhase, setGamePhase] = useState("")
   const [tag, setTag] = useState("")
   const [filters, setFilters] = useState(EMPTY_PUZZLE_FILTERS)
+  const [urlReady, setUrlReady] = useState(false)
   const [offset, setOffset] = useState(0)
   const [data, setData] = useState<V2PuzzleListResponse | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!user?.id) return
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search)
+      const nextPlatform = params.get("platform") || ""
+      const nextUsername = params.get("username") || ""
+      const rawTimeClass = params.get("time_class") || ""
+      const nextTimeClass = ["rapid", "blitz", "bullet", "classical", "daily"].includes(rawTimeClass)
+        ? rawTimeClass
+        : ""
+      const nextThemeGroup = params.get("theme_groups") || ""
+      const nextGamePhase = params.get("game_phase") || ""
+      const nextTag = (params.get("tags") || "").trim()
+
+      if (nextPlatform || nextUsername || nextTimeClass || nextThemeGroup || nextGamePhase || nextTag) {
+        setPlatform(nextPlatform)
+        setUsername(nextUsername)
+        setTimeClass(nextTimeClass)
+        setThemeGroup(nextThemeGroup)
+        setGamePhase(nextGamePhase)
+        setTag(nextTag)
+        setFilters({
+          platform: nextPlatform,
+          username: nextUsername,
+          timeClass: nextTimeClass,
+          themeGroup: nextThemeGroup,
+          gamePhase: nextGamePhase,
+          tag: nextTag,
+        })
+      }
+    }
+    setUrlReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (!user?.id || !urlReady) return
 
     let cancelled = false
     const loadPuzzles = async () => {
@@ -48,6 +84,7 @@ export default function PuzzlesPage() {
         const puzzles = await getPuzzles({
           platform: filters.platform,
           username: filters.username,
+          ...(filters.timeClass ? { time_class: filters.timeClass } : {}),
           theme_groups: filters.themeGroup,
           game_phase: filters.gamePhase,
           tags: filters.tag,
@@ -74,7 +111,7 @@ export default function PuzzlesPage() {
     return () => {
       cancelled = true
     }
-  }, [user?.id, filters, offset])
+  }, [user?.id, urlReady, filters, offset])
 
   const totalCount = data?.total_count ?? 0
   const puzzles = data?.puzzles ?? []
@@ -83,7 +120,7 @@ export default function PuzzlesPage() {
   const pageEnd = Math.min(offset + PAGE_SIZE, totalCount)
   const importedProfiles = user?.chess_profiles?.filter(profile => (profile.games_fetched || 0) > 0) ?? []
   const activeFilterCount = useMemo(() => {
-    return [filters.platform, filters.username, filters.themeGroup, filters.gamePhase, filters.tag].filter(Boolean).length
+    return [filters.platform, filters.username, filters.timeClass, filters.themeGroup, filters.gamePhase, filters.tag].filter(Boolean).length
   }, [filters])
 
   const applyFilters = (event: FormEvent) => {
@@ -91,6 +128,7 @@ export default function PuzzlesPage() {
     setFilters({
       platform,
       username: username.trim(),
+      timeClass,
       themeGroup,
       gamePhase,
       tag: tag.trim(),
@@ -101,6 +139,7 @@ export default function PuzzlesPage() {
   const clearFilters = () => {
     setPlatform("")
     setUsername("")
+    setTimeClass("")
     setThemeGroup("")
     setGamePhase("")
     setTag("")
@@ -152,7 +191,7 @@ export default function PuzzlesPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={applyFilters} className="grid gap-4 lg:grid-cols-6">
+                  <form onSubmit={applyFilters} className="grid gap-4 lg:grid-cols-7">
                     <div className="space-y-2">
                       <Label htmlFor="platform">Platform</Label>
                       <select id="platform" value={platform} onChange={(event) => setPlatform(event.target.value)} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900">
@@ -164,6 +203,17 @@ export default function PuzzlesPage() {
                     <div className="space-y-2">
                       <Label htmlFor="username">Username</Label>
                       <Input id="username" value={username} onChange={(event) => setUsername(event.target.value)} placeholder="zsmickycat" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="time-class">Time Control</Label>
+                      <select id="time-class" value={timeClass} onChange={(event) => setTimeClass(event.target.value)} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900">
+                        <option value="">All</option>
+                        <option value="rapid">Rapid</option>
+                        <option value="blitz">Blitz</option>
+                        <option value="bullet">Bullet</option>
+                        <option value="classical">Classical</option>
+                        <option value="daily">Daily</option>
+                      </select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="theme-group">Theme Group</Label>
@@ -210,6 +260,7 @@ export default function PuzzlesPage() {
                             setFilters({
                               platform: profile.platform,
                               username: profile.username,
+                              timeClass,
                               themeGroup: "",
                               gamePhase: "",
                               tag: "",

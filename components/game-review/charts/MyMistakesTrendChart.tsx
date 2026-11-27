@@ -24,8 +24,9 @@ export function MyMistakesTrendChart({ data }: MyMistakesTrendChartProps) {
   const chartData = data.myMistakesTimeSeries.nodes
     .map(node => {
       const totalMistakes = node.stats.total_count || 0
-      const totalGames = node.stats.unique_game_count || 0
-      const mistakesPerGame = totalGames > 0 ? totalMistakes / totalGames : 0
+      const totalGames = node.stats.total_games ?? node.stats.unique_game_count ?? 0
+      if (totalGames <= 0) return null
+      const mistakesPerGame = totalMistakes / totalGames
 
       const date = new Date(node.start_time)
       const label = date.toLocaleDateString('en-US', {
@@ -39,6 +40,7 @@ export function MyMistakesTrendChart({ data }: MyMistakesTrendChartProps) {
         totalMistakes,
         totalGames,
         averageMoveLength: (node.stats.average_move_length || 0) / 2,
+        timestamp: date.getTime(),
         fullDate: date.toLocaleDateString('en-US', {
           weekday: 'short',
           month: 'short',
@@ -47,7 +49,19 @@ export function MyMistakesTrendChart({ data }: MyMistakesTrendChartProps) {
         }),
       }
     })
-    .sort((a, b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime())
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+    .sort((a, b) => a.timestamp - b.timestamp)
+
+  if (chartData.length === 0) {
+    return (
+      <div className="h-64 flex items-center justify-center text-slate-500">
+        <div className="flex flex-col items-center text-center">
+          <TrendingDown className="h-6 w-6 text-slate-300 mb-2" />
+          <p className="text-sm">No mistakes trend data available</p>
+        </div>
+      </div>
+    )
+  }
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -84,8 +98,12 @@ export function MyMistakesTrendChart({ data }: MyMistakesTrendChartProps) {
     const firstHalf = recent.slice(0, Math.floor(recent.length / 2))
     const secondHalf = recent.slice(Math.floor(recent.length / 2))
 
-    const firstAvg = firstHalf.reduce((sum, d) => sum + d.mistakesPerGame, 0) / firstHalf.length
-    const secondAvg = secondHalf.reduce((sum, d) => sum + d.mistakesPerGame, 0) / secondHalf.length
+    const firstGames = firstHalf.reduce((sum, d) => sum + d.totalGames, 0)
+    const secondGames = secondHalf.reduce((sum, d) => sum + d.totalGames, 0)
+    if (firstGames <= 0 || secondGames <= 0) return { direction: 'stable', change: 0 }
+
+    const firstAvg = firstHalf.reduce((sum, d) => sum + d.totalMistakes, 0) / firstGames
+    const secondAvg = secondHalf.reduce((sum, d) => sum + d.totalMistakes, 0) / secondGames
 
     const change = secondAvg - firstAvg
 
@@ -96,7 +114,9 @@ export function MyMistakesTrendChart({ data }: MyMistakesTrendChartProps) {
   const trend = getTrend()
   const currentRate = chartData.length > 0 ? chartData[chartData.length - 1].mistakesPerGame : 0
   const bestRate = chartData.length > 0 ? Math.min(...chartData.map(d => d.mistakesPerGame)) : 0
-  const avgRate = chartData.length > 0 ? chartData.reduce((sum, d) => sum + d.mistakesPerGame, 0) / chartData.length : 0
+  const sumMistakes = chartData.reduce((sum, d) => sum + d.totalMistakes, 0)
+  const sumGames = chartData.reduce((sum, d) => sum + d.totalGames, 0)
+  const avgRate = sumGames > 0 ? sumMistakes / sumGames : 0
 
   const getPerformanceColor = (rate: number) => {
     if (rate <= 1.5) return 'text-emerald-700'

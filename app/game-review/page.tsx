@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Navigation from "@/components/navigation"
@@ -7,16 +8,19 @@ import Footer from "@/components/footer"
 import { MobileLayout, MobileContainer, MobileCard } from "@/components/ui/mobile-layout"
 import { Eye, User, Loader2, Settings, BarChart3, Calendar, RefreshCw, FlaskConical } from "lucide-react"
 import { useUserContext } from "@/hooks/useUserContext"
-import { useGameReviewData } from "@/hooks/useGameReviewData"
+import { useGameReviewData, type GameReviewTimeClass } from "@/hooks/useGameReviewData"
 import type { V2ImportJobResponse, V2ProfileImportStatus } from "@/hooks/useGameReviewData"
 import { PerformanceOverviewGrid } from "@/components/game-review/layout/PerformanceOverviewGrid"
 import { QuickActionsBar } from "@/components/game-review/layout/QuickActionsBar"
 import { LoadingSkeletons } from "@/components/game-review/common/LoadingSkeletons"
+import { TimeClassFilterBar } from "@/components/game-review/common/TimeClassFilterBar"
 import Link from "next/link"
 import { useI18n } from "@/components/i18n/i18n-provider"
 
 export default function GameReviewPage() {
   const { t } = useI18n()
+  const [timeClass, setTimeClass] = useState<GameReviewTimeClass>("")
+  const [selectedProfileKey, setSelectedProfileKey] = useState("")
   // Global user context
   const { user, isLoading: isLoadingUser, error: userError } = useUserContext()
 
@@ -30,10 +34,11 @@ export default function GameReviewPage() {
     error: statsError,
     refetch,
     refreshImport
-  } = useGameReviewData()
+  } = useGameReviewData({ timeClass, profileKey: selectedProfileKey })
 
   // Get chess profiles from user data
   const chessProfiles = user?.chess_profiles || []
+  const importedProfiles = chessProfiles.filter(profile => (profile.games_fetched || 0) > 0)
 
   const hasProfiles = chessProfiles.length > 0
   const importSummaryStatus = importStatus?.summary.status
@@ -194,9 +199,38 @@ export default function GameReviewPage() {
             </Card>
           )}
 
+          {/* Time Control & Profile Filter Strip */}
+          {!isLoadingUser && hasImportedGames && (
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <TimeClassFilterBar value={timeClass} onChange={setTimeClass} />
+              {importedProfiles.length > 1 && (
+                <select
+                  aria-label="Chess profile"
+                  value={
+                    selectedProfileKey ||
+                    (gameReviewData?.selectedProfile
+                      ? `${gameReviewData.selectedProfile.platform}:${gameReviewData.selectedProfile.username}`
+                      : "")
+                  }
+                  onChange={(e) => setSelectedProfileKey(e.target.value)}
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs sm:text-sm text-slate-700 shadow-2xs"
+                >
+                  {importedProfiles.map((profile) => {
+                    const key = `${profile.platform}:${profile.username}`
+                    return (
+                      <option key={key} value={key}>
+                        {profile.platform} / {profile.username}
+                      </option>
+                    )
+                  })}
+                </select>
+              )}
+            </div>
+          )}
+
           {/* Quick Actions Bar - Moved to top */}
           {!isLoadingStats && hasProfiles && !statsError && hasData && (
-            <QuickActionsBar hasData={hasData} data={gameReviewData} className="mb-6" />
+            <QuickActionsBar hasData={hasData} data={gameReviewData} timeClass={timeClass} className="mb-6" />
           )}
 
           {/* Performance Overview Cards */}

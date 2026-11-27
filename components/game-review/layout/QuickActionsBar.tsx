@@ -5,17 +5,21 @@ import { Card, CardContent } from "@/components/ui/card"
 import { BarChart3, Calendar, ArrowRight, AlertTriangle, Brain, Gamepad2, Puzzle } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { GameReviewData } from "@/hooks/useGameReviewData"
+import { GameReviewData, type GameReviewTimeClass } from "@/hooks/useGameReviewData"
 import { useI18n } from "@/components/i18n/i18n-provider"
 
 interface QuickActionsBarProps {
   hasData: boolean
   data?: GameReviewData | null
+  timeClass?: GameReviewTimeClass
   className?: string
 }
 
-export function QuickActionsBar({ hasData, className }: QuickActionsBarProps) {
+export function QuickActionsBar({ hasData, data, timeClass, className }: QuickActionsBarProps) {
   const { t } = useI18n()
+  const activeTimeClass = timeClass ?? data?.timeClass ?? ""
+  const timeClassSuffix = activeTimeClass ? `&time_class=${encodeURIComponent(activeTimeClass)}` : ""
+  const timeClassQuery = activeTimeClass ? `?time_class=${encodeURIComponent(activeTimeClass)}` : ""
 
   if (!hasData) {
     return (
@@ -60,7 +64,7 @@ export function QuickActionsBar({ hasData, className }: QuickActionsBarProps) {
           {/* View Actions Row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* View Detailed Insights */}
-            <Link href="/game-review/insights">
+            <Link href={`/game-review/insights${timeClassQuery}`}>
               <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                 <BarChart3 className="h-4 w-4 mr-2" />
                 {t("gameReview.viewDetailedInsights")}
@@ -68,7 +72,7 @@ export function QuickActionsBar({ hasData, className }: QuickActionsBarProps) {
             </Link>
 
             {/* View My Puzzles */}
-            <Link href="/puzzles">
+            <Link href={`/puzzles${timeClassQuery}`}>
               <Button variant="outline" className="w-full border-slate-200 text-slate-700 hover:bg-slate-50">
                 <Puzzle className="h-4 w-4 mr-2" />
                 {t("gameReview.viewMyPuzzles")}
@@ -87,7 +91,7 @@ export function QuickActionsBar({ hasData, className }: QuickActionsBarProps) {
           {/* Practice Buttons Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Practice Missed Opportunities */}
-            <Link href="/review-queue?mode=regular&puzzle_source=user_game&theme_groups=missed_opportunity,missed_attack">
+            <Link href={`/review-queue?puzzle_source=user_game&theme_groups=missed_opportunity,missed_attack${timeClassSuffix}`}>
               <Button variant="outline" className="w-full border-slate-200 text-slate-700 hover:bg-slate-50">
                 <AlertTriangle className="h-4 w-4 mr-2 text-amber-600" />
                 {t("gameReview.practiceMissedOpportunities")}
@@ -95,7 +99,7 @@ export function QuickActionsBar({ hasData, className }: QuickActionsBarProps) {
             </Link>
 
             {/* Practice My Mistakes */}
-            <Link href="/review-queue?mode=arrow_duel&puzzle_source=user_game&theme_groups=own_mistake_punished">
+            <Link href={`/review-queue?mode=arrow_duel&puzzle_source=user_game&theme_groups=own_mistake_punished,own_mistake_escaped${timeClassSuffix}`}>
               <Button variant="outline" className="w-full border-slate-200 text-slate-700 hover:bg-slate-50">
                 <Brain className="h-4 w-4 mr-2 text-blue-600" />
                 {t("gameReview.practiceMyMistakes")}

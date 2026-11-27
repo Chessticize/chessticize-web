@@ -217,7 +217,7 @@ export function ColorPerformanceChart({ data }: ColorPerformanceChartProps) {
             <div className="text-lg font-semibold tabular-nums text-slate-900">
               {chartData.reduce((sum, color) => sum + color.total, 0)}
             </div>
-            <div className="text-xs text-slate-500">Total Games</div>
+            <div className="text-xs text-slate-500">Total Opportunities</div>
           </div>
           <div>
             <div className="text-lg font-semibold tabular-nums text-slate-900">

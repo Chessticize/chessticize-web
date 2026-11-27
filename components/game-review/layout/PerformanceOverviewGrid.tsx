@@ -20,28 +20,40 @@ export function PerformanceOverviewGrid({
 }: PerformanceOverviewGridProps) {
 
 
-  // Calculate total opportunities (current 3 months)
+  // Calculate total opportunities directly from puzzle counts (never sum tag_counts,
+  // since each puzzle carries multiple tags).
   const calculateTotalOpportunities = () => {
-    if (!data?.opponentMistakesMissed3M || !data?.opponentMistakesCaught3M) return 0
-
-    const missed = data.opponentMistakesMissed3M.tag_counts.reduce((sum, tag) => sum + tag.count, 0)
-    const caught = data.opponentMistakesCaught3M.tag_counts.reduce((sum, tag) => sum + tag.count, 0)
-
-    return missed + caught
+    if (data?.summary) {
+      return (
+        data.summary.missedOpportunities +
+        data.summary.missedAttacks +
+        data.summary.caughtOpportunities +
+        data.summary.caughtAttacks
+      )
+    }
+    return 0
   }
 
-  // Calculate average puzzle length
+  // Convert ply-based average move length to full moves (weighted across puzzles).
   const calculateAveragePuzzleLength = () => {
+    if (data?.summary?.averageMoveLength && data.summary.averageMoveLength > 0) {
+      return data.summary.averageMoveLength / 2
+    }
     if (!data?.opponentMistakesTimeSeries?.nodes) return 0
-    
-    const nodes = data.opponentMistakesTimeSeries.nodes.filter(node => 
-      node.stats.average_move_length > 0
-    )
-    
-    if (nodes.length === 0) return 0
-    
-    const totalLength = nodes.reduce((sum, node) => sum + node.stats.average_move_length, 0)
-    return totalLength / nodes.length
+
+    let weightedSum = 0
+    let totalWeight = 0
+    for (const node of data.opponentMistakesTimeSeries.nodes) {
+      if (node.stats.average_move_length <= 0) continue
+      const weight =
+        node.stats.total_count && node.stats.total_count > 0
+          ? node.stats.total_count
+          : 1
+      weightedSum += node.stats.average_move_length * weight
+      totalWeight += weight
+    }
+    if (totalWeight === 0) return 0
+    return weightedSum / totalWeight / 2
   }
 
   const totalOpportunities = calculateTotalOpportunities()

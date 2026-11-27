@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { API_CONFIG } from '@/lib/config'
 import { apiGet, apiPost } from '@/lib/auth/api-client'
 import { ChessProfile } from '@/lib/auth/types'
@@ -15,6 +15,7 @@ export interface TimeSeriesNode {
     average_move_length: number
     total_count?: number
     unique_game_count?: number
+    total_games?: number
   }
 }
 
@@ -62,8 +63,63 @@ export interface MyMistakes3M {
   move_length_counts: MoveLengthCount[]
 }
 
+export type GameReviewTimeClass = '' | 'rapid' | 'blitz' | 'bullet' | 'classical' | 'daily'
+
+export interface UseGameReviewDataOptions {
+  timeClass?: GameReviewTimeClass
+  profileKey?: string
+  enabled?: boolean
+}
+
+export interface V2TimeClassDiagnosis {
+  time_class: string
+  games: number
+  caught_count: number
+  missed_count: number
+  recognition_rate: number
+  own_mistakes: number
+  mistakes_per_game: number
+}
+
+export interface V2ClockDiagnosis {
+  total_with_clock: number
+  time_trouble_count: number
+  impulsive_count: number
+  deliberate_count: number
+  avg_time_spent_sec: number
+  time_trouble_rate: number
+  impulsive_rate: number
+  deliberate_rate: number
+}
+
+export interface V2PriorityWeakness {
+  tag: string
+  missed_count: number
+  caught_count: number
+  total_count: number
+  raw_capture_rate: number
+  smoothed_capture_rate: number
+  impact_score: number
+}
+
+export interface V2OwnMistakeCause {
+  cause: string
+  count: number
+  share: number
+}
+
+export interface V2GameReviewDiagnosis {
+  time_class_breakdown: V2TimeClassDiagnosis[]
+  clock_breakdown: V2ClockDiagnosis
+  priority_weaknesses: V2PriorityWeakness[]
+  own_mistake_causes: V2OwnMistakeCause[]
+}
+
 export interface GameReviewData {
+  timeClass?: GameReviewTimeClass
+  diagnosis?: V2GameReviewDiagnosis
   opponentMistakesTimeSeries?: OpponentMistakesTimeSeries
+  opponentMistakesMissedTimeSeries?: OpponentMistakesTimeSeries
   opponentMistakesMissed3M?: OpponentMistakes3M
   opponentMistakesCaught3M?: OpponentMistakes3M
   opponentMistakesMissed3To6M?: OpponentMistakes3M
@@ -92,6 +148,7 @@ export interface GameReviewData {
     caughtOpportunities: number
     caughtAttacks: number
     ownMistakes: number
+    averageMoveLength?: number
   }
 }
 
@@ -139,6 +196,7 @@ interface V2GameReviewInsightsResponse {
   }>
   recommended_review: V2RecommendedReview
   stats_bundle?: V2GameReviewStatsPayload
+  diagnosis?: V2GameReviewDiagnosis
 }
 
 interface V2RecommendedReview {
@@ -221,6 +279,7 @@ interface V2StatsSeriesPoint {
   end: string
   total_puzzles: number
   unique_games: number
+  total_games?: number
   average_move_length: number
   buckets: Record<string, V2StatsBucket[]>
 }
@@ -228,6 +287,7 @@ interface V2StatsSeriesPoint {
 interface V2GameReviewStatsBundle {
   insights: V2GameReviewInsightsResponse
   opponentSeries: V2StatsResponse
+  opponentMissedSeries?: V2StatsResponse
   myMistakesSeries: V2StatsResponse
   opponentMissed3M: V2StatsResponse
   opponentCaught3M: V2StatsResponse
@@ -241,6 +301,7 @@ interface V2GameReviewStatsBundle {
 
 interface V2GameReviewStatsPayload {
   opponent_series: V2StatsResponse
+  opponent_missed_series?: V2StatsResponse
   my_mistakes_series: V2StatsResponse
   opponent_missed_3m: V2StatsResponse
   opponent_caught_3m: V2StatsResponse
@@ -252,7 +313,10 @@ interface V2GameReviewStatsPayload {
   my_mistakes_all_time: V2StatsResponse
 }
 
-export function useGameReviewData(): UseGameReviewDataReturn {
+export function useGameReviewData(options: UseGameReviewDataOptions = {}): UseGameReviewDataReturn {
+  const timeClass = options.timeClass ?? ''
+  const profileKey = options.profileKey ?? ''
+  const enabled = options.enabled ?? true
   const { user } = useUserContext()
   const [data, setData] = useState<GameReviewData | null>(null)
   const [importStatus, setImportStatus] = useState<V2ImportStatusResponse | null>(null)
@@ -260,11 +324,18 @@ export function useGameReviewData(): UseGameReviewDataReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [isRefreshingImport, setIsRefreshingImport] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const requestIdRef = useRef(0)
 
   const chessProfiles = useMemo(() => user?.chess_profiles || [], [user?.chess_profiles])
-  const selectedProfile = useMemo(() => selectGameReviewProfile(chessProfiles), [chessProfiles])
+  const selectedProfile = useMemo(
+    () => selectGameReviewProfile(chessProfiles, profileKey),
+    [chessProfiles, profileKey]
+  )
 
   const fetchData = useCallback(async () => {
+    if (!enabled) return
+    const requestId = ++requestIdRef.current
+
     if (!selectedProfile) {
       setData(null)
       if (chessProfiles.length === 0) {
@@ -278,15 +349,20 @@ export function useGameReviewData(): UseGameReviewDataReturn {
       setIsLoading(true)
       setError(null)
       try {
-        setImportStatus(await fetchV2ImportStatus())
+        const nextStatus = await fetchV2ImportStatus()
+        if (requestId !== requestIdRef.current) return
+        setImportStatus(nextStatus)
         setImportJob(null)
       } catch (err: unknown) {
+        if (requestId !== requestIdRef.current) return
         const message = err instanceof Error ? err.message : 'Failed to fetch game import status'
         setError(message)
         setImportStatus(null)
         setImportJob(null)
       } finally {
-        setIsLoading(false)
+        if (requestId === requestIdRef.current) {
+          setIsLoading(false)
+        }
       }
       return
     }
@@ -297,16 +373,20 @@ export function useGameReviewData(): UseGameReviewDataReturn {
     try {
       setImportStatus(null)
       setImportJob(null)
-      const statsBundle = await fetchV2GameReviewStats(selectedProfile)
-      setData(mapV2InsightsToGameReviewData(statsBundle, selectedProfile))
+      const statsBundle = await fetchV2GameReviewStats(selectedProfile, timeClass)
+      if (requestId !== requestIdRef.current) return
+      setData(mapV2InsightsToGameReviewData(statsBundle, selectedProfile, timeClass))
     } catch (err: unknown) {
+      if (requestId !== requestIdRef.current) return
       const message = err instanceof Error ? err.message : 'Failed to fetch game review data'
       setError(message)
       setData(null)
     } finally {
-      setIsLoading(false)
+      if (requestId === requestIdRef.current) {
+        setIsLoading(false)
+      }
     }
-  }, [selectedProfile, chessProfiles.length])
+  }, [enabled, selectedProfile, chessProfiles.length, timeClass])
 
   const refreshImport = useCallback(async (profileID?: string) => {
     const targetProfileID = profileID || selectImportRefreshProfile(importStatus, chessProfiles)
@@ -351,11 +431,18 @@ export function useGameReviewData(): UseGameReviewDataReturn {
   }
 }
 
-function selectGameReviewProfile(profiles: ChessProfile[]): ChessProfile | null {
+function selectGameReviewProfile(profiles: ChessProfile[], profileKey = ''): ChessProfile | null {
   if (profiles.length === 0) return null
 
   const importedProfiles = profiles.filter(profile => (profile.games_fetched || 0) > 0)
   if (importedProfiles.length === 0) return null
+
+  if (profileKey) {
+    const matched = importedProfiles.find(
+      profile => `${profile.platform}:${profile.username}` === profileKey || profile.id === profileKey
+    )
+    if (matched) return matched
+  }
 
   return [...importedProfiles].sort((a, b) => {
     const aGames = a.games_fetched || 0
@@ -415,7 +502,8 @@ function gameReviewWindowDates(): GameReviewWindowDates {
 function buildGameReviewInsightsUrl(
   profile: ChessProfile,
   includeStatsBundle = false,
-  windows = gameReviewWindowDates()
+  windows = gameReviewWindowDates(),
+  timeClass: GameReviewTimeClass = ''
 ): string {
   const params = new URLSearchParams({
     platform: profile.platform,
@@ -425,14 +513,20 @@ function buildGameReviewInsightsUrl(
     group_by: 'week',
     group_length: '1'
   })
+  if (timeClass) params.set('time_class', timeClass)
   if (includeStatsBundle) params.set('include_stats_bundle', 'true')
 
   return `${API_CONFIG.BASE_URL}/me/insights/game-review?${params.toString()}`
 }
 
-async function fetchV2GameReviewStats(profile: ChessProfile): Promise<V2GameReviewStatsBundle> {
+async function fetchV2GameReviewStats(
+  profile: ChessProfile,
+  timeClass: GameReviewTimeClass = ''
+): Promise<V2GameReviewStatsBundle> {
   const windows = gameReviewWindowDates()
-  const insights = await fetchV2JSON<V2GameReviewInsightsResponse>(buildGameReviewInsightsUrl(profile, true, windows))
+  const insights = await fetchV2JSON<V2GameReviewInsightsResponse>(
+    buildGameReviewInsightsUrl(profile, true, windows, timeClass)
+  )
   if (!insights.stats_bundle) {
     throw new Error('Game review stats bundle is missing from the v2 response')
   }
@@ -447,6 +541,7 @@ function mapV2StatsPayload(
   return {
     insights,
     opponentSeries: statsBundle.opponent_series,
+    opponentMissedSeries: statsBundle.opponent_missed_series,
     myMistakesSeries: statsBundle.my_mistakes_series,
     opponentMissed3M: statsBundle.opponent_missed_3m,
     opponentCaught3M: statsBundle.opponent_caught_3m,
@@ -470,19 +565,26 @@ async function fetchV2JSON<T>(url: string): Promise<T> {
 
 function mapV2InsightsToGameReviewData(
   statsBundle: V2GameReviewStatsBundle,
-  profile: ChessProfile
+  profile: ChessProfile,
+  timeClass: GameReviewTimeClass = ''
 ): GameReviewData {
   const { insights } = statsBundle
-  const summary = mapV2Summary(insights, statsBundle.opponentSeries, statsBundle.myMistakesSeries)
+  const myMistakesTimeSeries = toMyMistakesTimeSeries(statsBundle.myMistakesSeries, insights.series)
+  const summary = mapV2Summary(insights, statsBundle.opponentSeries, myMistakesTimeSeries)
 
   return {
+    timeClass,
+    diagnosis: insights.diagnosis,
     selectedProfile: {
       platform: profile.platform,
       username: profile.username
     },
     recommendedReview: insights.recommended_review,
     opponentMistakesTimeSeries: toOpponentTimeSeries(statsBundle.opponentSeries),
-    myMistakesTimeSeries: toMyMistakesTimeSeries(statsBundle.myMistakesSeries),
+    opponentMistakesMissedTimeSeries: statsBundle.opponentMissedSeries
+      ? toOpponentTimeSeries(statsBundle.opponentMissedSeries)
+      : undefined,
+    myMistakesTimeSeries,
     opponentMistakesMissed3M: toPuzzleStats(statsBundle.opponentMissed3M),
     opponentMistakesCaught3M: toPuzzleStats(statsBundle.opponentCaught3M),
     opponentMistakesMissed3To6M: toPuzzleStats(statsBundle.opponentMissed3To6M),
@@ -513,24 +615,41 @@ function toOpponentTimeSeries(stats: V2StatsResponse): OpponentMistakesTimeSerie
       end_time: item.end,
       stats: {
         theme_counts: toThemeCounts(item),
+        total_count: item.total_puzzles || 0,
+        unique_game_count: item.unique_games || 0,
         average_move_length: item.average_move_length || 0
       }
     }))
   }
 }
 
-function toMyMistakesTimeSeries(stats: V2StatsResponse): MyMistakesTimeSeries {
+function toMyMistakesTimeSeries(
+  stats: V2StatsResponse,
+  insightsSeries?: V2GameReviewInsightsResponse['series']
+): MyMistakesTimeSeries {
+  const gamesByStart = new Map<string, number>()
+  insightsSeries?.forEach(point => {
+    gamesByStart.set(point.start, point.games)
+  })
+
   return {
-    nodes: stats.series.map(item => ({
-      start_time: item.start,
-      end_time: item.end,
-      stats: {
-        theme_counts: toThemeCounts(item),
-        total_count: item.total_puzzles || 0,
-        unique_game_count: item.unique_games || 0,
-        average_move_length: item.average_move_length || 0
+    nodes: stats.series.map(item => {
+      const totalGames =
+        typeof item.total_games === 'number'
+          ? item.total_games
+          : gamesByStart.get(item.start)
+      return {
+        start_time: item.start,
+        end_time: item.end,
+        stats: {
+          theme_counts: toThemeCounts(item),
+          total_count: item.total_puzzles || 0,
+          unique_game_count: item.unique_games || 0,
+          total_games: totalGames,
+          average_move_length: item.average_move_length || 0
+        }
       }
-    }))
+    })
   }
 }
 
@@ -574,7 +693,7 @@ function toMoveLengthCounts(stats: V2StatsResponse): MoveLengthCount[] {
 function mapV2Summary(
   insights: V2GameReviewInsightsResponse,
   opponentSeries: V2StatsResponse,
-  myMistakesSeries: V2StatsResponse
+  myMistakesSeries: MyMistakesTimeSeries
 ): NonNullable<GameReviewData['summary']> {
   const missed = insights.summary.missed_opportunities + insights.summary.missed_attacks
   const caught = insights.summary.caught_opportunities + insights.summary.caught_attacks
@@ -591,12 +710,13 @@ function mapV2Summary(
     missedAttacks: insights.summary.missed_attacks,
     caughtOpportunities: insights.summary.caught_opportunities,
     caughtAttacks: insights.summary.caught_attacks,
-    ownMistakes: insights.summary.own_mistakes
+    ownMistakes: insights.summary.own_mistakes,
+    averageMoveLength: insights.summary.average_move_length || 0
   }
 }
 
 function calculateWeeklyTrend(stats: V2StatsResponse): number {
-  const rates = stats.series
+  const activeWeeks = stats.series
     .map(item => {
       let caught = 0
       let missed = 0
@@ -605,23 +725,45 @@ function calculateWeeklyTrend(stats: V2StatsResponse): number {
         if (theme.theme.includes('missed')) missed += theme.count
       }
       const total = caught + missed
-      return total > 0 ? (caught / total) * 100 : null
+      return total > 0 ? { caught, total } : null
     })
-    .filter((rate): rate is number => rate !== null)
+    .filter((entry): entry is { caught: number; total: number } => entry !== null)
 
-  if (rates.length < 2) return 0
-  return rates[rates.length - 1] - rates[rates.length - 2]
+  if (activeWeeks.length < 2) return 0
+  const recent = activeWeeks.slice(-4)
+  const mid = Math.floor(recent.length / 2)
+  const firstHalf = recent.slice(0, mid)
+  const secondHalf = recent.slice(mid)
+
+  const firstCaught = firstHalf.reduce((sum, w) => sum + w.caught, 0)
+  const firstTotal = firstHalf.reduce((sum, w) => sum + w.total, 0)
+  const secondCaught = secondHalf.reduce((sum, w) => sum + w.caught, 0)
+  const secondTotal = secondHalf.reduce((sum, w) => sum + w.total, 0)
+
+  if (firstTotal <= 0 || secondTotal <= 0) return 0
+  return (secondCaught / secondTotal) * 100 - (firstCaught / firstTotal) * 100
 }
 
-function calculateMistakesPerGameTrend(stats: V2StatsResponse): number {
-  const rates = stats.series
-    .map(item => {
-      const games = item.unique_games || 0
+function calculateMistakesPerGameTrend(stats: MyMistakesTimeSeries): number {
+  const activeWeeks = stats.nodes
+    .map(node => {
+      const games = node.stats.total_games ?? node.stats.unique_game_count ?? 0
       if (games <= 0) return null
-      return (item.total_puzzles || 0) / games
+      return { mistakes: node.stats.total_count || 0, games }
     })
-    .filter((rate): rate is number => rate !== null)
+    .filter((entry): entry is { mistakes: number; games: number } => entry !== null)
 
-  if (rates.length < 2) return 0
-  return rates[rates.length - 1] - rates[rates.length - 2]
+  if (activeWeeks.length < 2) return 0
+  const recent = activeWeeks.slice(-4)
+  const mid = Math.floor(recent.length / 2)
+  const firstHalf = recent.slice(0, mid)
+  const secondHalf = recent.slice(mid)
+
+  const firstMistakes = firstHalf.reduce((sum, w) => sum + w.mistakes, 0)
+  const firstGames = firstHalf.reduce((sum, w) => sum + w.games, 0)
+  const secondMistakes = secondHalf.reduce((sum, w) => sum + w.mistakes, 0)
+  const secondGames = secondHalf.reduce((sum, w) => sum + w.games, 0)
+
+  if (firstGames <= 0 || secondGames <= 0) return 0
+  return secondMistakes / secondGames - firstMistakes / firstGames
 }

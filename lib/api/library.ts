@@ -22,6 +22,7 @@ export interface ReviewQueueListParams {
   puzzle_source?: "lichess" | "user_game"
   due?: "all" | "now"
   theme_groups?: string
+  time_class?: string
   offset?: number
   limit?: number
 }
@@ -30,6 +31,7 @@ export interface ReviewQueueStatsParams {
   mode?: "regular" | "arrow_duel"
   puzzle_source?: "lichess" | "user_game"
   theme_groups?: string
+  time_class?: string
 }
 
 export interface DrawReviewQueueParams {
@@ -37,6 +39,7 @@ export interface DrawReviewQueueParams {
   puzzle_source?: "lichess" | "user_game"
   limit?: number
   theme_groups?: string[]
+  time_class?: string
 }
 
 export interface SprintStatsParams {

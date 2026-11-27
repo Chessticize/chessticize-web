@@ -10,9 +10,9 @@ interface CombinedPuzzleLengthChartProps {
 
 export function CombinedPuzzleLengthChart({ data }: CombinedPuzzleLengthChartProps) {
   if (
-    !data?.opponentMistakesMissed3M?.move_length_counts?.length &&
-    !data?.opponentMistakesCaught3M?.move_length_counts?.length &&
-    !data?.myMistakes3M?.move_length_counts?.length
+    !data?.opponentMistakesMissedAllTime?.move_length_counts?.length &&
+    !data?.opponentMistakesCaughtAllTime?.move_length_counts?.length &&
+    !data?.myMistakesAllTime?.move_length_counts?.length
   ) {
     return (
       <div className="h-80 flex items-center justify-center text-slate-500">
@@ -37,7 +37,7 @@ export function CombinedPuzzleLengthChart({ data }: CombinedPuzzleLengthChartPro
       if (!lengthMap.has(puzzleLength)) {
         lengthMap.set(puzzleLength, { length: puzzleLength, missed: 0, caught: 0, myMistakes: 0 })
       }
-      lengthMap.get(puzzleLength)!.missed = item.count
+      lengthMap.get(puzzleLength)!.missed += item.count
     })
 
     data.opponentMistakesCaughtAllTime?.move_length_counts?.forEach(item => {
@@ -45,7 +45,7 @@ export function CombinedPuzzleLengthChart({ data }: CombinedPuzzleLengthChartPro
       if (!lengthMap.has(puzzleLength)) {
         lengthMap.set(puzzleLength, { length: puzzleLength, missed: 0, caught: 0, myMistakes: 0 })
       }
-      lengthMap.get(puzzleLength)!.caught = item.count
+      lengthMap.get(puzzleLength)!.caught += item.count
     })
 
     data.myMistakesAllTime?.move_length_counts?.forEach(item => {
@@ -53,7 +53,7 @@ export function CombinedPuzzleLengthChart({ data }: CombinedPuzzleLengthChartPro
       if (!lengthMap.has(puzzleLength)) {
         lengthMap.set(puzzleLength, { length: puzzleLength, missed: 0, caught: 0, myMistakes: 0 })
       }
-      lengthMap.get(puzzleLength)!.myMistakes = item.count
+      lengthMap.get(puzzleLength)!.myMistakes += item.count
     })
 
     return Array.from(lengthMap.values())

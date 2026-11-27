@@ -34,6 +34,8 @@ import {
   type V2ReviewQueueStatsResponse,
 } from "@/lib/api/library"
 import { useUserContext } from "@/hooks/useUserContext"
+import type { GameReviewTimeClass } from "@/hooks/useGameReviewData"
+import { TimeClassFilterBar } from "@/components/game-review/common/TimeClassFilterBar"
 import { useI18n } from "@/components/i18n/i18n-provider"
 import { cn } from "@/lib/utils"
 
@@ -43,11 +45,13 @@ const DRAW_LIMIT = 5
 type ReviewMode = "" | "regular" | "arrow_duel"
 type PuzzleSourceFilter = "" | "user_game" | "lichess"
 type DueFilter = "now" | "all"
+type ReviewCategoryId = "all" | "sprint" | "game_missed" | "game_blunders" | "custom"
 type ReviewFilters = {
   mode: ReviewMode
   puzzleSource: PuzzleSourceFilter
   due: DueFilter
   themeGroups: string[]
+  timeClass: GameReviewTimeClass
 }
 
 const THEME_SCOPE_OPTIONS = [
@@ -59,7 +63,8 @@ const THEME_SCOPE_OPTIONS = [
   { value: "own_mistake_punished", label: "Own Mistake Punished" },
   { value: "own_mistake_escaped", label: "Own Mistake Escaped" },
   { value: "missed_opportunity,missed_attack", label: "Missed Opportunities & Attacks" },
-  { value: "missed_attack,own_mistake_punished", label: "My Mistakes" },
+  { value: "own_mistake_punished,own_mistake_escaped", label: "My Mistakes" },
+  { value: "missed_attack,own_mistake_punished", label: "Missed Attacks & Mistakes" },
 ]
 const VALID_THEME_GROUPS = new Set(
   THEME_SCOPE_OPTIONS.flatMap((option) => option.value.split(",").filter(Boolean)),
@@ -85,9 +90,13 @@ function ReviewQueueContent() {
     initialPuzzleSource === "lichess"
       ? []
       : parseThemeGroups(searchParams.get("theme_groups"))
+  const initialTimeClass: GameReviewTimeClass =
+    initialPuzzleSource === "lichess"
+      ? ""
+      : toTimeClassFilter(searchParams.get("time_class"))
   const initialOffset = normalizeOffset(searchParams.get("offset"))
   const hasInitialAdvancedFilters = Boolean(
-    initialMode || initialPuzzleSource || initialThemeGroups.length > 0 || initialDue !== "now",
+    initialMode || initialPuzzleSource || initialThemeGroups.length > 0 || initialTimeClass || initialDue !== "now",
   )
 
   const { user, isLoading: isLoadingUser, error: userError } = useUserContext()
@@ -95,11 +104,13 @@ function ReviewQueueContent() {
   const [puzzleSource, setPuzzleSource] = useState<PuzzleSourceFilter>(initialPuzzleSource)
   const [due, setDue] = useState<DueFilter>(initialDue)
   const [themeScope, setThemeScope] = useState(initialThemeGroups.join(","))
+  const [timeClass, setTimeClass] = useState<GameReviewTimeClass>(initialTimeClass)
   const [filters, setFilters] = useState<ReviewFilters>({
     mode: initialMode,
     puzzleSource: initialPuzzleSource,
     due: initialDue,
     themeGroups: initialThemeGroups,
+    timeClass: initialTimeClass,
   })
   const [filtersOpen, setFiltersOpen] = useState(hasInitialAdvancedFilters)
   const [offset, setOffset] = useState(initialOffset)
@@ -129,6 +140,7 @@ function ReviewQueueContent() {
         setIsLoading(true)
         setError(null)
         const scopedThemeGroups = themeGroupsParam(filters.puzzleSource, filters.themeGroups)
+        const scopedTimeClass = timeClassParam(filters.puzzleSource, filters.timeClass)
         const startOfLocalToday = new Date()
         startOfLocalToday.setHours(0, 0, 0, 0)
 
@@ -137,12 +149,14 @@ function ReviewQueueContent() {
             mode: filters.mode || undefined,
             puzzle_source: filters.puzzleSource || undefined,
             theme_groups: scopedThemeGroups,
+            ...(scopedTimeClass ? { time_class: scopedTimeClass } : {}),
           }),
           listReviewQueueItems({
             mode: filters.mode || undefined,
             puzzle_source: filters.puzzleSource || undefined,
             due: filters.due,
             theme_groups: scopedThemeGroups,
+            ...(scopedTimeClass ? { time_class: scopedTimeClass } : {}),
             offset,
             limit: PAGE_SIZE,
           }),
@@ -205,6 +219,8 @@ function ReviewQueueContent() {
       ? Math.round((todaySummary.correct / todaySummary.reviewed) * 100)
       : null
 
+  const activeCategory = useMemo(() => deriveActiveCategory(filters), [filters])
+
   const activeFilterCount = useMemo(
     () =>
       [
@@ -212,23 +228,91 @@ function ReviewQueueContent() {
         filters.puzzleSource,
         filters.due !== "now" ? filters.due : "",
         filters.themeGroups.length > 0 ? "theme_groups" : "",
+        filters.timeClass ? filters.timeClass : "",
       ].filter(Boolean).length,
     [filters],
   )
+
+  const commitFilters = (nextFilters: ReviewFilters) => {
+    setMode(nextFilters.mode)
+    setPuzzleSource(nextFilters.puzzleSource)
+    setDue(nextFilters.due)
+    setThemeScope(nextFilters.themeGroups.join(","))
+    setTimeClass(nextFilters.timeClass)
+    setFilters(nextFilters)
+    setOffset(0)
+    setDrawnPuzzles([])
+    router.replace(buildReviewQueueURL(pathname, nextFilters, 0), { scroll: false })
+  }
+
+  const selectCategory = (category: Exclude<ReviewCategoryId, "custom">) => {
+    switch (category) {
+      case "all":
+        commitFilters({
+          mode: "",
+          puzzleSource: "",
+          due: filters.due,
+          themeGroups: [],
+          timeClass: filters.timeClass,
+        })
+        return
+      case "sprint":
+        commitFilters({
+          mode: "",
+          puzzleSource: "lichess",
+          due: filters.due,
+          themeGroups: [],
+          timeClass: "",
+        })
+        return
+      case "game_missed":
+        commitFilters({
+          mode: "",
+          puzzleSource: "user_game",
+          due: filters.due,
+          themeGroups: ["missed_opportunity", "missed_attack"],
+          timeClass: filters.timeClass,
+        })
+        return
+      case "game_blunders":
+        commitFilters({
+          mode: "arrow_duel",
+          puzzleSource: "user_game",
+          due: filters.due,
+          themeGroups: ["own_mistake_punished", "own_mistake_escaped"],
+          timeClass: filters.timeClass,
+        })
+        return
+    }
+  }
+
+  const switchTimeClass = (nextTimeClass: GameReviewTimeClass) => {
+    const nextPuzzleSource: PuzzleSourceFilter =
+      filters.puzzleSource === "lichess" ? "user_game" : filters.puzzleSource
+    commitFilters({
+      ...filters,
+      puzzleSource: nextPuzzleSource,
+      timeClass: nextTimeClass,
+    })
+  }
 
   const applyFilters = (event: FormEvent) => {
     event.preventDefault()
     const nextThemeGroups =
       puzzleSource === "lichess" ? [] : parseThemeGroups(themeScope)
-    const nextFilters = {
+    const nextTimeClass: GameReviewTimeClass =
+      puzzleSource === "lichess" ? "" : timeClass
+    const nextFilters: ReviewFilters = {
       mode,
       puzzleSource,
       due,
       themeGroups: nextThemeGroups,
+      timeClass: nextTimeClass,
     }
     setFilters(nextFilters)
     if (puzzleSource === "lichess") {
       setThemeScope("")
+      setTimeClass("")
     }
     setOffset(0)
     setDrawnPuzzles([])
@@ -250,11 +334,13 @@ function ReviewQueueContent() {
       puzzleSource: "",
       due: "now",
       themeGroups: [],
+      timeClass: "",
     }
     setMode("")
     setPuzzleSource("")
     setDue("now")
     setThemeScope("")
+    setTimeClass("")
     setFilters(nextFilters)
     setOffset(0)
     setDrawnPuzzles([])
@@ -265,6 +351,7 @@ function ReviewQueueContent() {
     setPuzzleSource(value)
     if (value === "lichess") {
       setThemeScope("")
+      setTimeClass("")
     }
   }
 
@@ -272,6 +359,7 @@ function ReviewQueueContent() {
     try {
       setIsDrawing(true)
       setDrawError(null)
+      const scopedTimeClass = timeClassParam(filters.puzzleSource, filters.timeClass)
       const response = await drawReviewQueuePuzzles({
         mode: filters.mode || undefined,
         puzzle_source: filters.puzzleSource || undefined,
@@ -280,6 +368,7 @@ function ReviewQueueContent() {
           filters.puzzleSource,
           filters.themeGroups,
         )?.split(","),
+        ...(scopedTimeClass ? { time_class: scopedTimeClass } : {}),
       })
       setDrawnPuzzles(response.puzzles)
     } catch (loadError) {
@@ -365,6 +454,53 @@ function ReviewQueueContent() {
                 />
               ) : (
                 <>
+                  {/* Top-Level Category Tabs + Time Control Filter */}
+                  <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div
+                      role="tablist"
+                      aria-label="Review categories"
+                      className="inline-flex flex-wrap items-center rounded-xl bg-white dark:bg-[#1C1C1E] border border-slate-200 dark:border-[#38383A] p-1 shadow-2xs self-start"
+                    >
+                      {(
+                        [
+                          { id: "all", label: t("reviewQueue.categoryAll") },
+                          { id: "sprint", label: t("reviewQueue.categorySprint") },
+                          { id: "game_missed", label: t("reviewQueue.categoryGameMissed") },
+                          { id: "game_blunders", label: t("reviewQueue.categoryGameBlunders") },
+                        ] as const
+                      ).map((tab) => {
+                        const selected = activeCategory === tab.id
+                        return (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            role="tab"
+                            aria-selected={selected}
+                            onClick={() => selectCategory(tab.id)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors whitespace-nowrap",
+                              selected
+                                ? "bg-blue-600 text-white shadow-2xs"
+                                : "text-slate-600 dark:text-[#AEAEB2] hover:text-slate-900 dark:hover:text-white",
+                            )}
+                          >
+                            {tab.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {filters.puzzleSource !== "lichess" && (
+                      <TimeClassFilterBar
+                        value={filters.timeClass}
+                        onChange={switchTimeClass}
+                        includeClassical={false}
+                        size="sm"
+                        className="self-start lg:self-auto"
+                      />
+                    )}
+                  </div>
+
                   {/* Today's Progress + Primary Start Review Hero Card */}
                   <Card
                     className={cn(
@@ -590,7 +726,27 @@ function ReviewQueueContent() {
                             </select>
                           </div>
 
-                          <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
+                          <div className="space-y-1.5 sm:col-span-2 lg:col-span-2">
+                            <Label htmlFor="time-control" className="text-slate-700 dark:text-[#D1D1D6]">
+                              {t("reviewQueue.timeControl")}
+                            </Label>
+                            <select
+                              id="time-control"
+                              value={timeClass}
+                              onChange={(event) => setTimeClass(toTimeClassFilter(event.target.value))}
+                              disabled={puzzleSource === "lichess"}
+                              className="h-10 w-full rounded-md border border-slate-200 dark:border-[#38383A] bg-white dark:bg-[#262628] px-3 text-sm text-slate-900 dark:text-[#F2F2F7] disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-[#1C1C1E] disabled:text-slate-500"
+                            >
+                              <option value="">{t("common.all")}</option>
+                              <option value="rapid">{t("timeClass.rapid")}</option>
+                              <option value="blitz">{t("timeClass.blitz")}</option>
+                              <option value="bullet">{t("timeClass.bullet")}</option>
+                              <option value="classical">{t("timeClass.classical")}</option>
+                              <option value="daily">{t("timeClass.daily")}</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1.5 sm:col-span-2 lg:col-span-2">
                             <Label htmlFor="theme-scope" className="text-slate-700 dark:text-[#D1D1D6]">
                               {t("reviewQueue.themeScope")}
                             </Label>
@@ -609,7 +765,7 @@ function ReviewQueueContent() {
                             </select>
                           </div>
 
-                          <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-3">
+                          <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-2">
                             <Button
                               type="submit"
                               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
@@ -836,6 +992,14 @@ function ReviewScheduleList({
                 >
                   {item.puzzle_source === "user_game" ? t("common.yourGame") : t("nav.puzzleSprint")}
                 </Badge>
+                {timeClassFromMetadata(item) && (
+                  <Badge
+                    variant="outline"
+                    className="border-slate-200 dark:border-[#38383A] text-slate-600 dark:text-[#AEAEB2] text-[11px] capitalize"
+                  >
+                    {timeClassFromMetadata(item)}
+                  </Badge>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-500 dark:text-[#AEAEB2] tabular-nums">
@@ -965,6 +1129,54 @@ function toDueFilter(value: string | null): DueFilter {
   return value === "all" ? "all" : "now"
 }
 
+function toTimeClassFilter(value: string | null): GameReviewTimeClass {
+  return value === "rapid" ||
+    value === "blitz" ||
+    value === "bullet" ||
+    value === "classical" ||
+    value === "daily"
+    ? value
+    : ""
+}
+
+function timeClassParam(
+  puzzleSource: PuzzleSourceFilter,
+  timeClass: GameReviewTimeClass,
+): string | undefined {
+  if (puzzleSource === "lichess") return undefined
+  return timeClass || undefined
+}
+
+function deriveActiveCategory(filters: ReviewFilters): ReviewCategoryId {
+  const sortedGroups = [...filters.themeGroups].sort().join(",")
+  if (!filters.mode && !filters.puzzleSource && sortedGroups === "") {
+    return "all"
+  }
+  if (!filters.mode && filters.puzzleSource === "lichess" && sortedGroups === "") {
+    return "sprint"
+  }
+  if (
+    !filters.mode &&
+    filters.puzzleSource === "user_game" &&
+    sortedGroups === "missed_attack,missed_opportunity"
+  ) {
+    return "game_missed"
+  }
+  if (
+    filters.mode === "arrow_duel" &&
+    filters.puzzleSource === "user_game" &&
+    sortedGroups === "own_mistake_escaped,own_mistake_punished"
+  ) {
+    return "game_blunders"
+  }
+  return "custom"
+}
+
+function timeClassFromMetadata(item: V2ReviewQueuePuzzle): string | null {
+  const value = item.metadata?.time_class
+  return typeof value === "string" && value ? value : null
+}
+
 function normalizeOffset(value: string | null): number {
   const offset = Number.parseInt(value || "0", 10)
   if (!Number.isFinite(offset) || offset < 0) return 0
@@ -998,6 +1210,8 @@ function buildReviewQueueURL(
   if (filters.due !== "now") params.set("due", filters.due)
   const scopedThemeGroups = themeGroupsParam(filters.puzzleSource, filters.themeGroups)
   if (scopedThemeGroups) params.set("theme_groups", scopedThemeGroups)
+  const scopedTimeClass = timeClassParam(filters.puzzleSource, filters.timeClass)
+  if (scopedTimeClass) params.set("time_class", scopedTimeClass)
   if (offset > 0) params.set("offset", String(offset))
 
   const query = params.toString()
@@ -1030,6 +1244,7 @@ function translateThemeGroup(
       return t("themeGroup.own_mistake_escaped")
     case "missed_opportunity,missed_attack":
       return `${t("themeGroup.missed_opportunity")} & ${t("themeGroup.missed_attack")}`
+    case "own_mistake_punished,own_mistake_escaped":
     case "missed_attack,own_mistake_punished":
       return t("themeGroup.my_mistakes")
     default:

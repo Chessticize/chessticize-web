@@ -1,12 +1,15 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Navigation from "@/components/navigation"
 import Footer from "@/components/footer"
 import { ArrowLeft, BarChart3, Target, TrendingUp, PieChart, Calendar, Loader2, RefreshCw } from "lucide-react"
 import { useUserContext } from "@/hooks/useUserContext"
-import { useGameReviewData } from "@/hooks/useGameReviewData"
+import { useGameReviewData, type GameReviewTimeClass } from "@/hooks/useGameReviewData"
+import { TimeClassFilterBar } from "@/components/game-review/common/TimeClassFilterBar"
+import { WeaknessDiagnosisSection } from "@/components/game-review/diagnosis/WeaknessDiagnosisSection"
 import { ThemeAnalysisChart } from "@/components/game-review/charts/ThemeAnalysisChart"
 import { CaptureSuccessRateChart } from "@/components/game-review/charts/CaptureSuccessRateChart"
 import { ThemeSuccessRateTrendChart } from "@/components/game-review/charts/ThemeSuccessRateTrendChart"
@@ -20,8 +23,24 @@ import { LoadingSkeletons } from "@/components/game-review/common/LoadingSkeleto
 import Link from "next/link"
 import { useI18n } from "@/components/i18n/i18n-provider"
 
+const VALID_TIME_CLASSES = new Set<GameReviewTimeClass>(["rapid", "blitz", "bullet", "classical", "daily"])
+
 export default function GameReviewInsightsPage() {
   const { t } = useI18n()
+  const [timeClass, setTimeClass] = useState<GameReviewTimeClass>("")
+  const [selectedProfileKey, setSelectedProfileKey] = useState("")
+  const [urlReady, setUrlReady] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const param = new URLSearchParams(window.location.search).get("time_class") as GameReviewTimeClass | null
+      if (param && VALID_TIME_CLASSES.has(param)) {
+        setTimeClass(param)
+      }
+    }
+    setUrlReady(true)
+  }, [])
+
   // Global user context
   const { user, isLoading: isLoadingUser } = useUserContext()
 
@@ -34,10 +53,11 @@ export default function GameReviewInsightsPage() {
     error: statsError,
     refetch,
     refreshImport
-  } = useGameReviewData()
+  } = useGameReviewData({ timeClass, profileKey: selectedProfileKey, enabled: urlReady })
 
   // Get chess profiles from user data
   const chessProfiles = user?.chess_profiles || []
+  const importedProfiles = chessProfiles.filter(profile => (profile.games_fetched || 0) > 0)
 
   const hasProfiles = chessProfiles.length > 0
   const importSummaryStatus = importStatus?.summary.status
@@ -81,6 +101,35 @@ export default function GameReviewInsightsPage() {
               </span>
             </div>
           </div>
+
+          {/* Time Control & Profile Filter Strip */}
+          {!isLoadingUser && hasImportedGames && (
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+              <TimeClassFilterBar value={timeClass} onChange={setTimeClass} />
+              {importedProfiles.length > 1 && (
+                <select
+                  aria-label="Chess profile"
+                  value={
+                    selectedProfileKey ||
+                    (gameReviewData?.selectedProfile
+                      ? `${gameReviewData.selectedProfile.platform}:${gameReviewData.selectedProfile.username}`
+                      : "")
+                  }
+                  onChange={(e) => setSelectedProfileKey(e.target.value)}
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs sm:text-sm text-slate-700 shadow-2xs"
+                >
+                  {importedProfiles.map((profile) => {
+                    const key = `${profile.platform}:${profile.username}`
+                    return (
+                      <option key={key} value={key}>
+                        {profile.platform} / {profile.username}
+                      </option>
+                    )
+                  })}
+                </select>
+              )}
+            </div>
+          )}
 
           {/* Quick Summary */}
           {gameReviewData?.summary && (
@@ -188,6 +237,13 @@ export default function GameReviewInsightsPage() {
         {/* Charts Grid */}
         {!isLoadingStats && hasProfiles && !statsError && hasData && gameReviewData && (
           <div className="space-y-6">
+            {/* Weakness Diagnosis Overview */}
+            <WeaknessDiagnosisSection
+              diagnosis={gameReviewData.diagnosis}
+              activeTimeClass={timeClass}
+              onSelectTimeClass={setTimeClass}
+            />
+
             {/* Performance Trends Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Weekly Recognition Trend */}

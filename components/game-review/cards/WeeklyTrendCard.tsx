@@ -40,51 +40,61 @@ export function WeeklyTrendCard({
     )
   }
 
-  const recognitionData = data?.opponentMistakesTimeSeries?.nodes?.map(node => {
-    let caught = 0
-    let missed = 0
+  const recognitionData = data?.opponentMistakesTimeSeries?.nodes
+    ?.map(node => {
+      let caught = 0
+      let missed = 0
 
-    node.stats.theme_counts.forEach(theme => {
-      if (theme.theme.includes('caught')) {
-        caught += theme.count
-      } else if (theme.theme.includes('missed')) {
-        missed += theme.count
+      node.stats.theme_counts.forEach(theme => {
+        if (theme.theme.includes('caught')) {
+          caught += theme.count
+        } else if (theme.theme.includes('missed')) {
+          missed += theme.count
+        }
+      })
+
+      const total = caught + missed
+      if (total <= 0) return null
+      const rate = (caught / total) * 100
+
+      const date = new Date(node.start_time)
+      const label = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      })
+
+      return {
+        week: label,
+        recognitionRate: rate,
+        caught,
+        total,
+        label: `Week of ${label}`,
       }
     })
+    .filter((item): item is NonNullable<typeof item> => item !== null) || []
 
-    const total = caught + missed
-    const rate = total > 0 ? (caught / total) * 100 : 0
+  const mistakesData = data?.myMistakesTimeSeries?.nodes
+    ?.map(node => {
+      const totalMistakes = node.stats.total_count || 0
+      const totalGames = node.stats.total_games ?? node.stats.unique_game_count ?? 0
+      if (totalGames <= 0) return null
+      const mistakesPerGame = totalMistakes / totalGames
 
-    const date = new Date(node.start_time)
-    const label = date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
+      const date = new Date(node.start_time)
+      const label = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      })
+
+      return {
+        week: label,
+        mistakesPerGame,
+        caught: totalMistakes,
+        total: totalGames,
+        label: `Week of ${label}`,
+      }
     })
-
-    return {
-      week: label,
-      recognitionRate: rate,
-      label: `Week of ${label}`,
-    }
-  }) || []
-
-  const mistakesData = data?.myMistakesTimeSeries?.nodes?.map(node => {
-    const totalMistakes = node.stats.total_count || 0
-    const totalGames = node.stats.unique_game_count || 0
-    const mistakesPerGame = totalGames > 0 ? totalMistakes / totalGames : 0
-
-    const date = new Date(node.start_time)
-    const label = date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    })
-
-    return {
-      week: label,
-      mistakesPerGame,
-      label: `Week of ${label}`,
-    }
-  }) || []
+    .filter((item): item is NonNullable<typeof item> => item !== null) || []
 
   if (!recognitionData.length && !mistakesData.length) {
     return (

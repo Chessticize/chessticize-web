@@ -9,11 +9,11 @@ describe("QuickActionsBar", () => {
 
     expect(screen.getByRole("link", { name: /Practice Missed Opportunities/i })).toHaveAttribute(
       "href",
-      "/review-queue?mode=regular&puzzle_source=user_game&theme_groups=missed_opportunity,missed_attack",
+      "/review-queue?puzzle_source=user_game&theme_groups=missed_opportunity,missed_attack",
     )
     expect(screen.getByRole("link", { name: /Practice My Mistakes/i })).toHaveAttribute(
       "href",
-      "/review-queue?mode=arrow_duel&puzzle_source=user_game&theme_groups=own_mistake_punished",
+      "/review-queue?mode=arrow_duel&puzzle_source=user_game&theme_groups=own_mistake_punished,own_mistake_escaped",
     )
   })
 

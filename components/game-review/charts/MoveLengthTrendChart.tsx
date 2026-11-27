@@ -27,7 +27,14 @@ export function MoveLengthTrendChart({ data }: MoveLengthTrendChartProps) {
     )
   }
 
-  if (!data?.opponentMistakesTimeSeries?.nodes?.length && !data?.myMistakesTimeSeries?.nodes?.length) {
+  const opponentNodes =
+    data.opponentMistakesMissedTimeSeries?.nodes ??
+    data.opponentMistakesTimeSeries?.nodes ??
+    []
+  const isMissedOnlySeries = Boolean(data.opponentMistakesMissedTimeSeries?.nodes)
+  const opponentSeriesLabel = isMissedOnlySeries ? 'Missed Opportunities' : 'Opponent Opportunities'
+
+  if (!opponentNodes.length && !data?.myMistakesTimeSeries?.nodes?.length) {
     return (
       <div className="h-64 flex items-center justify-center text-slate-500">
         <div className="flex flex-col items-center text-center">
@@ -51,39 +58,45 @@ export function MoveLengthTrendChart({ data }: MoveLengthTrendChartProps) {
     return `${weekdays[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`
   }
 
-  const opponentData = data.opponentMistakesTimeSeries?.nodes?.map(node => {
-    const date = new Date(node.start_time)
-    const weekStart = new Date(date)
-    weekStart.setDate(date.getDate() - date.getDay() + 1)
-    weekStart.setHours(0, 0, 0, 0)
-    const weekKey = weekStart.toISOString().split('T')[0]
+  const opponentData = opponentNodes
+    .filter(node => (node.stats.average_move_length || 0) > 0)
+    .map(node => {
+      const date = new Date(node.start_time)
+      const weekStart = new Date(date)
+      weekStart.setDate(date.getDate() - date.getDay() + 1)
+      weekStart.setHours(0, 0, 0, 0)
+      const weekKey = weekStart.toISOString().split('T')[0]
 
-    return {
-      weekKey,
-      date: formatDate(node.start_time),
-      opponentMoveLength: (node.stats.average_move_length || 0) / 2,
-      fullDate: formatFullDate(node.start_time),
-      timestamp: weekStart.getTime(),
-      originalTimestamp: date.getTime(),
-    }
-  }) || []
+      return {
+        weekKey,
+        date: formatDate(node.start_time),
+        opponentMoveLength: (node.stats.average_move_length || 0) / 2,
+        weight: node.stats.total_count && node.stats.total_count > 0 ? node.stats.total_count : 1,
+        fullDate: formatFullDate(node.start_time),
+        timestamp: weekStart.getTime(),
+        originalTimestamp: date.getTime(),
+      }
+    })
 
-  const myMistakesData = data.myMistakesTimeSeries?.nodes?.map(node => {
-    const date = new Date(node.start_time)
-    const weekStart = new Date(date)
-    weekStart.setDate(date.getDate() - date.getDay() + 1)
-    weekStart.setHours(0, 0, 0, 0)
-    const weekKey = weekStart.toISOString().split('T')[0]
+  const myMistakesData = (data.myMistakesTimeSeries?.nodes || [])
+    .filter(node => (node.stats.average_move_length || 0) > 0)
+    .map(node => {
+      const date = new Date(node.start_time)
+      const weekStart = new Date(date)
+      weekStart.setDate(date.getDate() - date.getDay() + 1)
+      weekStart.setHours(0, 0, 0, 0)
+      const weekKey = weekStart.toISOString().split('T')[0]
 
-    return {
-      weekKey,
-      date: formatDate(node.start_time),
-      myMoveLength: (node.stats.average_move_length || 0) / 2,
-      fullDate: formatFullDate(node.start_time),
-      timestamp: weekStart.getTime(),
-      originalTimestamp: date.getTime(),
-    }
-  }) || []
+      return {
+        weekKey,
+        date: formatDate(node.start_time),
+        myMoveLength: (node.stats.average_move_length || 0) / 2,
+        weight: node.stats.total_count && node.stats.total_count > 0 ? node.stats.total_count : 1,
+        fullDate: formatFullDate(node.start_time),
+        timestamp: weekStart.getTime(),
+        originalTimestamp: date.getTime(),
+      }
+    })
 
   const allWeekKeys = new Set<string>()
   opponentData.forEach(item => allWeekKeys.add(item.weekKey))
@@ -142,13 +155,15 @@ export function MoveLengthTrendChart({ data }: MoveLengthTrendChartProps) {
     return null
   }
 
+  const opponentWeight = opponentData.reduce((sum, d) => sum + d.weight, 0)
   const avgOpponentLength =
-    opponentData.length > 0
-      ? opponentData.reduce((sum, d) => sum + d.opponentMoveLength, 0) / opponentData.length
+    opponentWeight > 0
+      ? opponentData.reduce((sum, d) => sum + d.opponentMoveLength * d.weight, 0) / opponentWeight
       : 0
+  const myWeight = myMistakesData.reduce((sum, d) => sum + d.weight, 0)
   const avgMyLength =
-    myMistakesData.length > 0
-      ? myMistakesData.reduce((sum, d) => sum + d.myMoveLength, 0) / myMistakesData.length
+    myWeight > 0
+      ? myMistakesData.reduce((sum, d) => sum + d.myMoveLength * d.weight, 0) / myWeight
       : 0
 
   const opponentTrend =
@@ -209,7 +224,7 @@ export function MoveLengthTrendChart({ data }: MoveLengthTrendChartProps) {
               strokeWidth={2.5}
               dot={{ fill: '#2563eb', strokeWidth: 2, r: 4 }}
               activeDot={{ r: 6, fill: '#1d4ed8' }}
-              name="Missed Opportunities"
+              name={opponentSeriesLabel}
               connectNulls={false}
             />
             <Line
@@ -230,7 +245,7 @@ export function MoveLengthTrendChart({ data }: MoveLengthTrendChartProps) {
         <div className="space-y-2.5">
           <h4 className="text-sm font-medium text-slate-900 flex items-center gap-2">
             <div className="w-2.5 h-2.5 bg-blue-600 rounded-full" />
-            <span>Missed Opportunities</span>
+            <span>{opponentSeriesLabel}</span>
           </h4>
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center p-3 bg-slate-50 border border-slate-200 rounded-lg">

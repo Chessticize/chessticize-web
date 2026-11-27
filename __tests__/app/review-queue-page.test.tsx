@@ -339,6 +339,52 @@ describe("ReviewQueuePage", () => {
     expect(screen.getByText("Starts with due positions matching the current mode, source, and theme filters.")).toBeInTheDocument()
     expect(mockDrawReviewQueuePuzzles).not.toHaveBeenCalled()
   })
+
+  it("switches review categories with one click and filters user-game reviews by rapid time class", async () => {
+    render(<ReviewQueuePage />)
+
+    await screen.findByText("Showing 1-1 of 1")
+
+    // Switch to Puzzle Sprint category tab
+    await userEvent.click(screen.getByRole("tab", { name: "Puzzle Sprint" }))
+    await waitFor(() => {
+      expect(mockListReviewQueueItems).toHaveBeenLastCalledWith({
+        mode: undefined,
+        puzzle_source: "lichess",
+        due: "now",
+        theme_groups: undefined,
+        offset: 0,
+        limit: 20,
+      })
+    })
+
+    // Switch to Game: My Blunders category tab
+    await userEvent.click(screen.getByRole("tab", { name: "Game: My Blunders" }))
+    await waitFor(() => {
+      expect(mockListReviewQueueItems).toHaveBeenLastCalledWith({
+        mode: "arrow_duel",
+        puzzle_source: "user_game",
+        due: "now",
+        theme_groups: "own_mistake_punished,own_mistake_escaped",
+        offset: 0,
+        limit: 20,
+      })
+    })
+
+    // Narrow to Rapid time control
+    await userEvent.click(screen.getByRole("tab", { name: "Rapid" }))
+    await waitFor(() => {
+      expect(mockListReviewQueueItems).toHaveBeenLastCalledWith({
+        mode: "arrow_duel",
+        puzzle_source: "user_game",
+        due: "now",
+        theme_groups: "own_mistake_punished,own_mistake_escaped",
+        time_class: "rapid",
+        offset: 0,
+        limit: 20,
+      })
+    })
+  })
 })
 
 function reviewStats() {

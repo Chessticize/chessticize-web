@@ -76,9 +76,9 @@ export function ThemeSuccessRateTrendChart({
     const currentTheme = current3MData.find(t => t.tag === tag)
     const previousTheme = previous3MData.find(t => t.tag === tag)
 
-    const currentRate = currentTheme?.successRate || 0
-    const previousRate = previousTheme?.successRate || 0
-    const trend = currentRate - previousRate
+    const currentRate = currentTheme?.successRate ?? 0
+    const previousRate = previousTheme ? previousTheme.successRate : null
+    const trend = previousRate !== null ? currentRate - previousRate : null
 
     return {
       theme: currentTheme?.displayName || getThemeDisplayName(tag, locale),
@@ -115,27 +115,35 @@ export function ThemeSuccessRateTrendChart({
             </div>
             <div className="flex items-center justify-between gap-4">
               <span className="text-slate-500">Previous 3M:</span>
-              <span className="font-medium text-slate-900">{entry.previous.toFixed(1)}% ({entry.previousTotal} total)</span>
+              <span className="font-medium text-slate-900">
+                {entry.previous !== null
+                  ? `${entry.previous.toFixed(1)}% (${entry.previousTotal} total)`
+                  : 'Insufficient data'}
+              </span>
             </div>
             <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-100">
               <span className="text-slate-600">Trend:</span>
-              <div className="flex items-center gap-1">
-                {entry.trend > 2 && <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />}
-                {entry.trend < -2 && <TrendingDown className="h-3.5 w-3.5 text-rose-600" />}
-                {Math.abs(entry.trend) <= 2 && <Minus className="h-3.5 w-3.5 text-slate-500" />}
-                <span
-                  className={`font-medium ${
-                    entry.trend > 2
-                      ? 'text-emerald-600'
-                      : entry.trend < -2
-                        ? 'text-rose-600'
-                        : 'text-slate-600'
-                  }`}
-                >
-                  {entry.trend > 0 ? '+' : ''}
-                  {entry.trend.toFixed(1)}%
-                </span>
-              </div>
+              {entry.trend === null ? (
+                <span className="font-medium text-slate-500">N/A</span>
+              ) : (
+                <div className="flex items-center gap-1">
+                  {entry.trend > 2 && <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />}
+                  {entry.trend < -2 && <TrendingDown className="h-3.5 w-3.5 text-rose-600" />}
+                  {Math.abs(entry.trend) <= 2 && <Minus className="h-3.5 w-3.5 text-slate-500" />}
+                  <span
+                    className={`font-medium ${
+                      entry.trend > 2
+                        ? 'text-emerald-600'
+                        : entry.trend < -2
+                          ? 'text-rose-600'
+                          : 'text-slate-600'
+                    }`}
+                  >
+                    {entry.trend > 0 ? '+' : ''}
+                    {entry.trend.toFixed(1)}%
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

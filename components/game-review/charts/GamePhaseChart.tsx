@@ -119,8 +119,14 @@ export function GamePhaseChart({ data }: GamePhaseChartProps) {
     return '#64748b'
   }
 
-  const bestPhase = chartData.reduce((best, current) => (current.rate > best.rate ? current : best))
-  const worstPhase = chartData.reduce((worst, current) => (current.rate < worst.rate ? current : worst))
+  const eligiblePhases = chartData.filter(phase => phase.total >= 3)
+  const rankedPhases = eligiblePhases.length > 0 ? eligiblePhases : chartData
+  const bestPhase = rankedPhases.reduce((best, current) => (current.rate > best.rate ? current : best))
+  const worstPhase = rankedPhases.reduce((worst, current) => (current.rate < worst.rate ? current : worst))
+  const totalPhaseOpportunities = chartData.reduce((sum, phase) => sum + phase.total, 0)
+  const totalPhaseCaught = chartData.reduce((sum, phase) => sum + phase.caught, 0)
+  const weightedAverageRate =
+    totalPhaseOpportunities > 0 ? (totalPhaseCaught / totalPhaseOpportunities) * 100 : 0
 
   return (
     <div className="space-y-4">
@@ -196,7 +202,7 @@ export function GamePhaseChart({ data }: GamePhaseChartProps) {
           </div>
           <div>
             <div className="text-lg font-semibold tabular-nums text-slate-900">
-              {(chartData.reduce((sum, phase) => sum + phase.rate, 0) / chartData.length).toFixed(1)}%
+              {weightedAverageRate.toFixed(1)}%
             </div>
             <div className="text-xs text-slate-500">Average Rate</div>
           </div>

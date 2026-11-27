@@ -72,12 +72,14 @@ describe("PuzzlesPage", () => {
     render(<PuzzlesPage />)
 
     await screen.findByText("chess.com / bob")
+    await userEvent.selectOptions(screen.getByLabelText("Time Control"), "rapid")
     await userEvent.selectOptions(screen.getByLabelText("Theme Group"), "missed_attack")
     await userEvent.type(screen.getByLabelText("Tag"), "fork")
     await userEvent.click(screen.getByRole("button", { name: /apply/i }))
 
     await waitFor(() => {
       expect(mockGetPuzzles).toHaveBeenLastCalledWith(expect.objectContaining({
+        time_class: "rapid",
         theme_groups: "missed_attack",
         tags: "fork",
         offset: 0,
@@ -99,6 +101,25 @@ describe("PuzzlesPage", () => {
     expect(screen.queryByText("Showing 1-20 of 24")).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /next/i })).not.toBeInTheDocument()
     expect(screen.getByText("0 puzzles")).toBeInTheDocument()
+  })
+
+  it("hydrates tags and time_class deep-link params on mount without firing an unfiltered fetch", async () => {
+    window.history.replaceState({}, "", "/puzzles?tags=pin&time_class=rapid")
+    mockGetPuzzles.mockResolvedValue(puzzlesResponse({ total_count: 1, offset: 0 }))
+
+    render(<PuzzlesPage />)
+
+    await waitFor(() => {
+      expect(mockGetPuzzles).toHaveBeenCalledTimes(1)
+      expect(mockGetPuzzles).toHaveBeenCalledWith(expect.objectContaining({
+        tags: "pin",
+        time_class: "rapid",
+        offset: 0,
+      }))
+    })
+    expect(screen.getByLabelText("Tag")).toHaveValue("pin")
+    expect(screen.getByLabelText("Time Control")).toHaveValue("rapid")
+    window.history.replaceState({}, "", "/puzzles")
   })
 })
 
